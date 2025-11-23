@@ -1,0 +1,53 @@
+{
+    "name": "julienlinard/php-carousel",
+    "description": "A modern and performant carousel library for PHP with beautiful designs, no external dependencies. Pure CSS/JS native implementation.",
+    "type": "library",
+    "keywords": [
+        "carousel",
+        "slider",
+        "gallery",
+        "php",
+        "php8",
+        "ui",
+        "ux",
+        "design",
+        "responsive"
+    ],
+    "homepage": "https://github.com/julien-lin/php-carousel",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Julien Linard",
+            "email": "julien.linard.dev@gmail.com",
+            "homepage": "https://github.com/julien-lin"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/julien-lin/php-carousel/issues",
+        "source": "https://github.com/julien-lin/php-carousel"
+    },
+    "require": {
+        "php": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "JulienLinard\\Carousel\\": "src/Carousel/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JulienLinard\\Carousel\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-text"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "version": "1.0.0"
+}
+
