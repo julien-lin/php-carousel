@@ -118,8 +118,6 @@ Advanced gallery with thumbnail navigation for easy browsing.
 
 ![Gallery Carousel Demo](docs/images/gallery-carousel.gif)
 
-> 💡 **Note**: To generate these animated GIFs, see [docs/GENERATE_GIFS.md](docs/GENERATE_GIFS.md)
-
 ## 📋 Features
 
 - ✅ **Zero Dependencies** - Pure CSS/JS native implementation
