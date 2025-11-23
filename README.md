@@ -94,6 +94,32 @@ $carousel = Carousel::testimonial('testimonials', [
 echo $carousel->render();
 ```
 
+## 🎨 Visual Demos
+
+See the carousels in action! Each type is fully customizable and responsive with smooth animations.
+
+### Image Carousel
+Perfect for hero banners and image galleries with smooth slide transitions.
+
+![Image Carousel Demo](docs/images/image-carousel.gif)
+
+### Card Carousel
+Ideal for product listings, blog posts, or feature showcases. Displays multiple items per slide.
+
+![Card Carousel Demo](docs/images/card-carousel.gif)
+
+### Testimonial Carousel
+Beautiful fade transitions for customer reviews and testimonials.
+
+![Testimonial Carousel Demo](docs/images/testimonial-carousel.gif)
+
+### Gallery Carousel
+Advanced gallery with thumbnail navigation for easy browsing.
+
+![Gallery Carousel Demo](docs/images/gallery-carousel.gif)
+
+> 💡 **Note**: To generate these animated GIFs, see [docs/GENERATE_GIFS.md](docs/GENERATE_GIFS.md)
+
 ## 📋 Features
 
 - ✅ **Zero Dependencies** - Pure CSS/JS native implementation
@@ -115,6 +141,8 @@ echo $carousel->render();
 
 Perfect for image galleries and hero banners.
 
+![Image Carousel Example](docs/images/image-carousel.gif)
+
 ```php
 $carousel = Carousel::image('gallery', [
     'image1.jpg',
@@ -131,6 +159,8 @@ $carousel = Carousel::image('gallery', [
 
 Ideal for product listings, blog posts, or feature cards.
 
+![Card Carousel Example](docs/images/card-carousel.gif)
+
 ```php
 $carousel = Carousel::card('products', $products, [
     'itemsPerSlide' => 3,
@@ -145,6 +175,8 @@ $carousel = Carousel::card('products', $products, [
 
 Perfect for customer reviews and testimonials.
 
+![Testimonial Carousel Example](docs/images/testimonial-carousel.gif)
+
 ```php
 $carousel = Carousel::testimonial('reviews', $testimonials, [
     'transition' => 'fade',
@@ -155,6 +187,8 @@ $carousel = Carousel::testimonial('reviews', $testimonials, [
 #### Gallery Carousel
 
 Advanced gallery with thumbnails navigation.
+
+![Gallery Carousel Example](docs/images/gallery-carousel.gif)
 
 ```php
 $carousel = Carousel::gallery('photo-gallery', $images, [

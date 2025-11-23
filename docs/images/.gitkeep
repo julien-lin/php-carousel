@@ -1,0 +1,10 @@
+# This directory contains animated GIFs for the README
+
+Place your carousel animated GIFs here:
+- image-carousel.gif
+- card-carousel.gif
+- testimonial-carousel.gif
+- gallery-carousel.gif
+
+See GENERATE_GIFS.md for instructions on how to generate these animated GIFs from screen recordings.
+
