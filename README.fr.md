@@ -94,6 +94,30 @@ $carousel = Carousel::testimonial('temoignages', [
 echo $carousel->render();
 ```
 
+## 🎨 Démonstrations Visuelles
+
+Découvrez les carrousels en action ! Chaque type est entièrement personnalisable et responsive avec des animations fluides.
+
+### Carousel d'Images
+Parfait pour les bannières hero et les galeries d'images avec des transitions de glissement fluides.
+
+![Démo Carousel d'Images](docs/images/image-carousel.gif)
+
+### Carousel de Cartes
+Idéal pour les listes de produits, articles de blog ou présentations de fonctionnalités. Affiche plusieurs éléments par slide.
+
+![Démo Carousel de Cartes](docs/images/card-carousel.gif)
+
+### Carousel de Témoignages
+De belles transitions en fondu pour les avis clients et témoignages.
+
+![Démo Carousel de Témoignages](docs/images/testimonial-carousel.gif)
+
+### Carousel Galerie
+Galerie avancée avec navigation par miniatures pour une navigation facile.
+
+![Démo Carousel Galerie](docs/images/gallery-carousel.gif)
+
 ## 📋 Fonctionnalités
 
 - ✅ **Zéro Dépendance** - Implémentation CSS/JS native pure
@@ -115,6 +139,8 @@ echo $carousel->render();
 
 Parfait pour les galeries d'images et les bannières hero.
 
+![Exemple Carousel d'Images](docs/images/image-carousel.gif)
+
 ```php
 $carousel = Carousel::image('galerie', [
     'image1.jpg',
@@ -131,6 +157,8 @@ $carousel = Carousel::image('galerie', [
 
 Idéal pour les listes de produits, articles de blog ou cartes de fonctionnalités.
 
+![Exemple Carousel de Cartes](docs/images/card-carousel.gif)
+
 ```php
 $carousel = Carousel::card('produits', $produits, [
     'itemsPerSlide' => 3,
@@ -145,6 +173,8 @@ $carousel = Carousel::card('produits', $produits, [
 
 Parfait pour les avis clients et témoignages.
 
+![Exemple Carousel de Témoignages](docs/images/testimonial-carousel.gif)
+
 ```php
 $carousel = Carousel::testimonial('avis', $temoignages, [
     'transition' => 'fade',
@@ -155,6 +185,8 @@ $carousel = Carousel::testimonial('avis', $temoignages, [
 #### Carousel Galerie
 
 Galerie avancée avec navigation par miniatures.
+
+![Exemple Carousel Galerie](docs/images/gallery-carousel.gif)
 
 ```php
 $carousel = Carousel::gallery('galerie-photos', $images, [
