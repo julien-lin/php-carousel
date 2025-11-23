@@ -1,0 +1,963 @@
+<?php
+
+declare(strict_types=1);
+
+namespace JulienLinard\Carousel;
+
+use JulienLinard\Carousel\Exception;
+
+/**
+ * Renders carousel HTML, CSS and JavaScript
+ */
+class CarouselRenderer
+{
+    private Carousel $carousel;
+    private static array $renderedCarousels = [];
+
+    public function __construct(Carousel $carousel)
+    {
+        $this->carousel = $carousel;
+    }
+
+    /**
+     * Render complete carousel (HTML + CSS + JS)
+     */
+    public function render(): string
+    {
+        $html = $this->renderHtml();
+        $css = $this->renderCss();
+        $js = $this->renderJs();
+
+        return $css . "\n" . $html . "\n" . $js;
+    }
+
+    /**
+     * Render HTML structure
+     */
+    public function renderHtml(): string
+    {
+        $id = $this->carousel->getId();
+        $type = $this->carousel->getType();
+        $items = $this->carousel->getItems();
+        $options = $this->carousel->getOptions();
+        
+        if (empty($items)) {
+            throw new Exception\EmptyCarouselException();
+        }
+        
+        $transition = $options['transition'] ?? 'slide';
+        $html = '<div class="carousel-container" id="carousel-' . htmlspecialchars($id) . '" data-carousel-id="' . htmlspecialchars($id) . '" data-carousel-type="' . htmlspecialchars($type) . '" data-carousel-transition="' . htmlspecialchars($transition) . '">';
+        
+        // Wrapper
+        $html .= '<div class="carousel-wrapper">';
+        
+        // Track
+        $html .= '<div class="carousel-track" role="region" aria-label="Carousel">';
+        
+        foreach ($items as $index => $item) {
+            $html .= $this->renderItem($item, $index, $type);
+        }
+        
+        $html .= '</div>'; // .carousel-track
+        
+        // Navigation arrows
+        if ($options['showArrows'] ?? true) {
+            $html .= '<button class="carousel-arrow carousel-arrow-prev" aria-label="Previous slide" type="button">';
+            $html .= '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+            $html .= '<path d="M15 18l-6-6 6-6"/>';
+            $html .= '</svg>';
+            $html .= '</button>';
+            
+            $html .= '<button class="carousel-arrow carousel-arrow-next" aria-label="Next slide" type="button">';
+            $html .= '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+            $html .= '<path d="M9 18l6-6-6-6"/>';
+            $html .= '</svg>';
+            $html .= '</button>';
+        }
+        
+        $html .= '</div>'; // .carousel-wrapper
+        
+        // Dots navigation
+        if (($options['showDots'] ?? true) && count($items) > 1) {
+            $html .= '<div class="carousel-dots" role="tablist">';
+            foreach ($items as $index => $item) {
+                $html .= '<button class="carousel-dot' . ($index === 0 ? ' active' : '') . '" role="tab" aria-label="Go to slide ' . ($index + 1) . '" data-slide="' . $index . '" type="button"></button>';
+            }
+            $html .= '</div>';
+        }
+        
+        // Thumbnails (for gallery type)
+        if (($options['showThumbnails'] ?? false) && $type === Carousel::TYPE_GALLERY) {
+            $html .= '<div class="carousel-thumbnails">';
+            foreach ($items as $index => $item) {
+                $html .= '<button class="carousel-thumbnail' . ($index === 0 ? ' active' : '') . '" data-slide="' . $index . '" type="button">';
+                if ($item->image) {
+                    $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: 'Thumbnail ' . ($index + 1)) . '" loading="lazy">';
+                }
+                $html .= '</button>';
+            }
+            $html .= '</div>';
+        }
+        
+        $html .= '</div>'; // .carousel-container
+        
+        return $html;
+    }
+
+    /**
+     * Render a single carousel item
+     */
+    private function renderItem(CarouselItem $item, int $index, string $type): string
+    {
+        $html = '<div class="carousel-slide' . ($index === 0 ? ' active' : '') . '" data-slide-index="' . $index . '">';
+        
+        switch ($type) {
+            case Carousel::TYPE_IMAGE:
+                $html .= $this->renderImageItem($item);
+                break;
+            case Carousel::TYPE_CARD:
+                $html .= $this->renderCardItem($item);
+                break;
+            case Carousel::TYPE_TESTIMONIAL:
+                $html .= $this->renderTestimonialItem($item);
+                break;
+            case Carousel::TYPE_GALLERY:
+                $html .= $this->renderGalleryItem($item);
+                break;
+            default:
+                $html .= $this->renderSimpleItem($item);
+        }
+        
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * Render image item
+     */
+    private function renderImageItem(CarouselItem $item): string
+    {
+        $html = '';
+        
+        if ($item->link) {
+            $html .= '<a href="' . htmlspecialchars($item->link) . '" class="carousel-image-link">';
+        }
+        
+        if ($item->image) {
+            $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: '') . '" class="carousel-image" loading="lazy">';
+        }
+        
+        if ($item->title || $item->content) {
+            $html .= '<div class="carousel-caption">';
+            if ($item->title) {
+                $html .= '<h3 class="carousel-title">' . htmlspecialchars($item->title) . '</h3>';
+            }
+            if ($item->content) {
+                $html .= '<p class="carousel-content">' . htmlspecialchars($item->content) . '</p>';
+            }
+            $html .= '</div>';
+        }
+        
+        if ($item->link) {
+            $html .= '</a>';
+        }
+        
+        return $html;
+    }
+
+    /**
+     * Render card item
+     */
+    private function renderCardItem(CarouselItem $item): string
+    {
+        $html = '<div class="carousel-card">';
+        
+        if ($item->image) {
+            $html .= '<div class="carousel-card-image">';
+            $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: '') . '" loading="lazy">';
+            $html .= '</div>';
+        }
+        
+        $html .= '<div class="carousel-card-body">';
+        if ($item->title) {
+            $html .= '<h3 class="carousel-card-title">' . htmlspecialchars($item->title) . '</h3>';
+        }
+        if ($item->content) {
+            $html .= '<p class="carousel-card-content">' . htmlspecialchars($item->content) . '</p>';
+        }
+        if ($item->link) {
+            $html .= '<a href="' . htmlspecialchars($item->link) . '" class="carousel-card-link">Learn more</a>';
+        }
+        $html .= '</div>';
+        
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * Render testimonial item
+     */
+    private function renderTestimonialItem(CarouselItem $item): string
+    {
+        $html = '<div class="carousel-testimonial">';
+        
+        if ($item->content) {
+            $html .= '<blockquote class="carousel-testimonial-quote">';
+            $html .= '<p>' . htmlspecialchars($item->content) . '</p>';
+            $html .= '</blockquote>';
+        }
+        
+        if ($item->title) {
+            $html .= '<div class="carousel-testimonial-author">';
+            if ($item->image) {
+                $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title) . '" class="carousel-testimonial-avatar" loading="lazy">';
+            }
+            $html .= '<div class="carousel-testimonial-info">';
+            $html .= '<cite class="carousel-testimonial-name">' . htmlspecialchars($item->title) . '</cite>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+        
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * Render gallery item
+     */
+    private function renderGalleryItem(CarouselItem $item): string
+    {
+        $html = '<div class="carousel-gallery-item">';
+        
+        if ($item->image) {
+            $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: '') . '" class="carousel-gallery-image" loading="lazy">';
+        }
+        
+        if ($item->title || $item->content) {
+            $html .= '<div class="carousel-gallery-caption">';
+            if ($item->title) {
+                $html .= '<h4 class="carousel-gallery-title">' . htmlspecialchars($item->title) . '</h4>';
+            }
+            if ($item->content) {
+                $html .= '<p class="carousel-gallery-content">' . htmlspecialchars($item->content) . '</p>';
+            }
+            $html .= '</div>';
+        }
+        
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * Render simple item
+     */
+    private function renderSimpleItem(CarouselItem $item): string
+    {
+        $html = '<div class="carousel-simple-item">';
+        
+        if ($item->title) {
+            $html .= '<h3>' . htmlspecialchars($item->title) . '</h3>';
+        }
+        
+        if ($item->content) {
+            $html .= '<div>' . htmlspecialchars($item->content) . '</div>';
+        }
+        
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * Render CSS styles
+     */
+    public function renderCss(): string
+    {
+        $id = $this->carousel->getId();
+        $options = $this->carousel->getOptions();
+        $type = $this->carousel->getType();
+        
+        // Only render CSS once per carousel ID
+        if (isset(self::$renderedCarousels[$id])) {
+            return '';
+        }
+        self::$renderedCarousels[$id] = true;
+        
+        $cssId = '#carousel-' . $id;
+        $gap = $options['gap'] ?? 16;
+        $transitionDuration = ($options['transitionDuration'] ?? 500) . 'ms';
+        
+        $css = '<style id="carousel-style-' . $id . '">';
+        
+        // Base styles
+        $css .= $this->getBaseCss($cssId, $gap, $transitionDuration);
+        
+        // Type-specific styles
+        switch ($type) {
+            case Carousel::TYPE_IMAGE:
+                $css .= $this->getImageCss($cssId);
+                break;
+            case Carousel::TYPE_CARD:
+                $css .= $this->getCardCss($cssId, $options);
+                break;
+            case Carousel::TYPE_TESTIMONIAL:
+                $css .= $this->getTestimonialCss($cssId);
+                break;
+            case Carousel::TYPE_GALLERY:
+                $css .= $this->getGalleryCss($cssId);
+                break;
+        }
+        
+        // Responsive styles
+        if ($options['responsive'] ?? true) {
+            $css .= $this->getResponsiveCss($cssId, $options);
+        }
+        
+        $css .= '</style>';
+        
+        return $css;
+    }
+
+    /**
+     * Get base CSS
+     */
+    private function getBaseCss(string $cssId, int $gap, string $transitionDuration): string
+    {
+        return <<<CSS
+{$cssId} {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+}
+
+{$cssId} .carousel-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+{$cssId}[data-carousel-transition="fade"] .carousel-wrapper {
+    min-height: 300px;
+}
+
+{$cssId} .carousel-track {
+    display: flex;
+    transition: transform {$transitionDuration} cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+{$cssId} .carousel-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    position: relative;
+}
+
+{$cssId}[data-carousel-transition="fade"] .carousel-track {
+    position: relative;
+}
+
+{$cssId}[data-carousel-transition="fade"] .carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    transition: opacity {$transitionDuration} ease-in-out;
+    z-index: 1;
+}
+
+{$cssId}[data-carousel-transition="fade"] .carousel-slide.active {
+    opacity: 1;
+    z-index: 2;
+    position: relative;
+}
+
+{$cssId}[data-carousel-transition="slide"] .carousel-slide {
+    opacity: 1;
+}
+
+{$cssId} .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: #333;
+}
+
+{$cssId} .carousel-arrow:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-50%) scale(1.1);
+}
+
+{$cssId} .carousel-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+{$cssId} .carousel-arrow-prev {
+    left: 16px;
+}
+
+{$cssId} .carousel-arrow-next {
+    right: 16px;
+}
+
+{$cssId} .carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 0;
+}
+
+{$cssId} .carousel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+{$cssId} .carousel-dot:hover {
+    background: rgba(0, 0, 0, 0.4);
+    transform: scale(1.2);
+}
+
+{$cssId} .carousel-dot.active {
+    background: rgba(0, 0, 0, 0.8);
+    width: 24px;
+    border-radius: 6px;
+}
+
+CSS;
+    }
+
+    /**
+     * Get image carousel CSS
+     */
+    private function getImageCss(string $cssId): string
+    {
+        return <<<CSS
+{$cssId} .carousel-image-link {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+{$cssId} .carousel-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+{$cssId} .carousel-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    color: white;
+    padding: 32px 24px 24px;
+}
+
+{$cssId} .carousel-title {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+{$cssId} .carousel-content {
+    margin: 0;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+CSS;
+    }
+
+    /**
+     * Get card carousel CSS
+     */
+    private function getCardCss(string $cssId, array $options): string
+    {
+        $itemsPerSlide = $options['itemsPerSlide'] ?? 3;
+        $slideWidth = 100 / $itemsPerSlide;
+        
+        return <<<CSS
+{$cssId} .carousel-track {
+    gap: {$options['gap']}px;
+}
+
+{$cssId} .carousel-slide {
+    flex: 0 0 calc({$slideWidth}% - {$options['gap']}px);
+}
+
+{$cssId} .carousel-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+{$cssId} .carousel-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+{$cssId} .carousel-card-image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+}
+
+{$cssId} .carousel-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+{$cssId} .carousel-card:hover .carousel-card-image img {
+    transform: scale(1.05);
+}
+
+{$cssId} .carousel-card-body {
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+{$cssId} .carousel-card-title {
+    margin: 0 0 12px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+{$cssId} .carousel-card-content {
+    margin: 0 0 16px 0;
+    color: #666;
+    line-height: 1.6;
+    flex: 1;
+}
+
+{$cssId} .carousel-card-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+{$cssId} .carousel-card-link:hover {
+    color: #0052a3;
+    text-decoration: underline;
+}
+
+CSS;
+    }
+
+    /**
+     * Get testimonial carousel CSS
+     */
+    private function getTestimonialCss(string $cssId): string
+    {
+        return <<<CSS
+{$cssId} .carousel-testimonial {
+    text-align: center;
+    padding: 48px 24px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+{$cssId} .carousel-testimonial-quote {
+    margin: 0 0 32px 0;
+    font-size: 20px;
+    line-height: 1.8;
+    color: #333;
+    font-style: italic;
+}
+
+{$cssId} .carousel-testimonial-quote p {
+    margin: 0;
+}
+
+{$cssId} .carousel-testimonial-author {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+{$cssId} .carousel-testimonial-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+{$cssId} .carousel-testimonial-name {
+    font-weight: 600;
+    font-style: normal;
+    color: #1a1a1a;
+}
+
+CSS;
+    }
+
+    /**
+     * Get gallery carousel CSS
+     */
+    private function getGalleryCss(string $cssId): string
+    {
+        return <<<CSS
+{$cssId} .carousel-gallery-item {
+    position: relative;
+    width: 100%;
+}
+
+{$cssId} .carousel-gallery-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    max-height: 600px;
+    margin: 0 auto;
+}
+
+{$cssId} .carousel-gallery-caption {
+    padding: 16px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+{$cssId} .carousel-gallery-title {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+{$cssId} .carousel-gallery-content {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+{$cssId} .carousel-thumbnails {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+{$cssId} .carousel-thumbnail {
+    border: 2px solid transparent;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+}
+
+{$cssId} .carousel-thumbnail:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+{$cssId} .carousel-thumbnail.active {
+    border-color: #0066cc;
+    opacity: 1;
+}
+
+{$cssId} .carousel-thumbnail img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    display: block;
+}
+
+CSS;
+    }
+
+    /**
+     * Get responsive CSS
+     */
+    private function getResponsiveCss(string $cssId, array $options): string
+    {
+        $desktopItems = $options['itemsPerSlideDesktop'] ?? $options['itemsPerSlide'] ?? 1;
+        $tabletItems = $options['itemsPerSlideTablet'] ?? $options['itemsPerSlide'] ?? 1;
+        $mobileItems = $options['itemsPerSlideMobile'] ?? 1;
+        
+        $desktopWidth = 100 / $desktopItems;
+        $tabletWidth = 100 / $tabletItems;
+        $mobileWidth = 100 / $mobileItems;
+        
+        return <<<CSS
+@media (max-width: 768px) {
+    {$cssId} .carousel-slide {
+        flex: 0 0 calc({$mobileWidth}% - {$options['gap']}px);
+    }
+    
+    {$cssId} .carousel-arrow {
+        width: 40px;
+        height: 40px;
+    }
+    
+    {$cssId} .carousel-arrow-prev {
+        left: 8px;
+    }
+    
+    {$cssId} .carousel-arrow-next {
+        right: 8px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    {$cssId} .carousel-slide {
+        flex: 0 0 calc({$tabletWidth}% - {$options['gap']}px);
+    }
+}
+
+@media (min-width: 1025px) {
+    {$cssId} .carousel-slide {
+        flex: 0 0 calc({$desktopWidth}% - {$options['gap']}px);
+    }
+}
+
+CSS;
+    }
+
+    /**
+     * Render JavaScript
+     */
+    public function renderJs(): string
+    {
+        $id = $this->carousel->getId();
+        $options = $this->carousel->getOptions();
+        
+        // Only render JS once per carousel ID
+        if (isset(self::$renderedCarousels[$id . '_js'])) {
+            return '';
+        }
+        self::$renderedCarousels[$id . '_js'] = true;
+        
+        $js = '<script id="carousel-script-' . $id . '">';
+        $js .= '(function() {';
+        $js .= 'const carousel = document.getElementById("carousel-' . $id . '");';
+        $js .= 'if (!carousel) return;';
+        
+        $js .= $this->getCarouselJs($id, $options);
+        
+        $js .= '})();';
+        $js .= '</script>';
+        
+        return $js;
+    }
+
+    /**
+     * Get carousel JavaScript
+     */
+    private function getCarouselJs(string $id, array $options): string
+    {
+        $autoplay = $options['autoplay'] ?? true ? 'true' : 'false';
+        $autoplayInterval = $options['autoplayInterval'] ?? 5000;
+        $loop = $options['loop'] ?? true ? 'true' : 'false';
+        $transition = $options['transition'] ?? 'slide';
+        $keyboardNav = $options['keyboardNavigation'] ?? true ? 'true' : 'false';
+        $touchSwipe = $options['touchSwipe'] ?? true ? 'true' : 'false';
+        
+        return <<<JS
+const carouselId = "{$id}";
+const carouselEl = carousel;
+const track = carouselEl.querySelector('.carousel-track');
+const slides = Array.from(carouselEl.querySelectorAll('.carousel-slide'));
+const prevBtn = carouselEl.querySelector('.carousel-arrow-prev');
+const nextBtn = carouselEl.querySelector('.carousel-arrow-next');
+const dots = Array.from(carouselEl.querySelectorAll('.carousel-dot'));
+const thumbnails = Array.from(carouselEl.querySelectorAll('.carousel-thumbnail'));
+
+let currentIndex = 0;
+let autoplayTimer = null;
+const autoplay = {$autoplay};
+const autoplayInterval = {$autoplayInterval};
+const loop = {$loop};
+const transition = "{$transition}";
+const keyboardNav = {$keyboardNav};
+const touchSwipe = {$touchSwipe};
+
+function updateCarousel() {
+    slides.forEach((slide, index) => {
+        slide.classList.toggle('active', index === currentIndex);
+    });
+    
+    if (dots.length > 0) {
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentIndex);
+        });
+    }
+    
+    if (thumbnails.length > 0) {
+        thumbnails.forEach((thumb, index) => {
+            thumb.classList.toggle('active', index === currentIndex);
+        });
+    }
+    
+    if (track) {
+        if (transition === 'slide') {
+            const slideWidth = slides[0]?.offsetWidth || 0;
+            const gap = parseInt(getComputedStyle(track).gap) || 0;
+            const translateX = -(currentIndex * (slideWidth + gap));
+            track.style.transform = `translateX(\${translateX}px)`;
+        }
+        // For fade transition, opacity is handled by CSS
+    }
+}
+
+function goToSlide(index) {
+    if (index < 0) {
+        currentIndex = loop ? slides.length - 1 : 0;
+    } else if (index >= slides.length) {
+        currentIndex = loop ? 0 : slides.length - 1;
+    } else {
+        currentIndex = index;
+    }
+    updateCarousel();
+    resetAutoplay();
+}
+
+function nextSlide() {
+    goToSlide(currentIndex + 1);
+}
+
+function prevSlide() {
+    goToSlide(currentIndex - 1);
+}
+
+function resetAutoplay() {
+    if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+    }
+    if (autoplay) {
+        autoplayTimer = setInterval(nextSlide, autoplayInterval);
+    }
+}
+
+// Navigation buttons
+if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+        prevSlide();
+    });
+}
+
+if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+        nextSlide();
+    });
+}
+
+// Dots navigation
+dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => {
+        goToSlide(index);
+    });
+});
+
+// Thumbnails navigation
+thumbnails.forEach((thumb, index) => {
+    thumb.addEventListener('click', () => {
+        goToSlide(index);
+    });
+});
+
+// Keyboard navigation
+if (keyboardNav) {
+    carouselEl.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+            prevSlide();
+        } else if (e.key === 'ArrowRight') {
+            nextSlide();
+        }
+    });
+    carouselEl.setAttribute('tabindex', '0');
+}
+
+// Touch swipe
+if (touchSwipe) {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    carouselEl.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    carouselEl.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+    
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+        
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+    }
+}
+
+// Pause autoplay on hover
+if (autoplay) {
+    carouselEl.addEventListener('mouseenter', () => {
+        if (autoplayTimer) {
+            clearInterval(autoplayTimer);
+        }
+    });
+    
+    carouselEl.addEventListener('mouseleave', () => {
+        resetAutoplay();
+    });
+}
+
+// Initialize
+updateCarousel();
+resetAutoplay();
+
+// Handle window resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        updateCarousel();
+    }, 250);
+});
+
+JS;
+    }
+}
+
