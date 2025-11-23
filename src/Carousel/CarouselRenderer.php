@@ -339,6 +339,10 @@ class CarouselRenderer
     min-height: 300px;
 }
 
+{$cssId}[data-carousel-type="image"] .carousel-wrapper {
+    min-height: 300px;
+}
+
 {$cssId} .carousel-track {
     display: flex;
     transition: transform {$transitionDuration} cubic-bezier(0.4, 0, 0.2, 1);
@@ -349,6 +353,10 @@ class CarouselRenderer
     flex: 0 0 100%;
     min-width: 0;
     position: relative;
+}
+
+{$cssId}[data-carousel-type="image"] .carousel-slide {
+    min-height: 300px;
 }
 
 {$cssId}[data-carousel-transition="fade"] .carousel-track {
@@ -450,6 +458,10 @@ CSS;
      */
     private function getImageCss(string $cssId): string
     {
+        $options = $this->carousel->getOptions();
+        $height = $options['height'] ?? 'auto';
+        $minHeight = ($height === 'auto') ? '400px' : $height;
+        
         return <<<CSS
 {$cssId} .carousel-image-link {
     display: block;
@@ -460,9 +472,14 @@ CSS;
 
 {$cssId} .carousel-image {
     width: 100%;
-    height: auto;
+    height: {$height};
     display: block;
     object-fit: cover;
+    max-width: 100%;
+}
+
+{$cssId}[data-carousel-type="image"] .carousel-wrapper {
+    min-height: {$minHeight};
 }
 
 {$cssId} .carousel-caption {
