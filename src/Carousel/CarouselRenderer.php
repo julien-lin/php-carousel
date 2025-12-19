@@ -62,11 +62,19 @@ class CarouselRenderer
         $transition = $options['transition'] ?? 'slide';
         $html = '<div class="carousel-container" id="carousel-' . $this->escape($id) . '" data-carousel-id="' . $this->escape($id) . '" data-carousel-type="' . $this->escape($type) . '" data-carousel-transition="' . $this->escape($transition) . '">';
         
+        // Loading indicator
+        $html .= '<div class="carousel-loading" aria-hidden="true" role="status" aria-label="Chargement du carousel">';
+        $html .= '<div class="carousel-spinner"></div>';
+        $html .= '</div>';
+        
+        // Screen reader announcement
+        $html .= '<div class="sr-only carousel-announcement" aria-live="polite" aria-atomic="true"></div>';
+        
         // Wrapper
         $html .= '<div class="carousel-wrapper">';
         
         // Track
-        $html .= '<div class="carousel-track" role="region" aria-label="Carousel">';
+        $html .= '<div class="carousel-track" role="region" aria-label="Carousel" aria-live="polite" aria-atomic="true">';
         
         foreach ($items as $index => $item) {
             $html .= $this->renderItem($item, $index, $type);
@@ -123,7 +131,20 @@ class CarouselRenderer
      */
     private function renderItem(CarouselItem $item, int $index, string $type): string
     {
-        $html = '<div class="carousel-slide' . ($index === 0 ? ' active' : '') . '" data-slide-index="' . $index . '">';
+        $items = $this->carousel->getItems();
+        $isActive = $index === 0;
+        $totalSlides = count($items);
+        
+        $html = '<div class="carousel-slide' . ($isActive ? ' active' : '') . '" ';
+        $html .= 'data-slide-index="' . $index . '" ';
+        $html .= 'role="group" ';
+        $html .= 'aria-roledescription="slide" ';
+        $html .= 'aria-label="Slide ' . ($index + 1) . ' of ' . $totalSlides . '" ';
+        $html .= 'aria-hidden="' . ($isActive ? 'false' : 'true') . '" ';
+        if ($isActive) {
+            $html .= 'aria-current="true" ';
+        }
+        $html .= '>';
         
         switch ($type) {
             case Carousel::TYPE_IMAGE:
@@ -398,6 +419,56 @@ class CarouselRenderer
     display: flex;
     transition: transform {$transitionDuration} cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
+}
+
+/* Screen reader only */
+{$cssId} .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Loading indicator */
+{$cssId} .carousel-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    pointer-events: none;
+}
+
+{$cssId} .carousel-loading.hidden {
+    display: none;
+}
+
+{$cssId} .carousel-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #0066cc;
+    border-radius: 50%;
+    animation: carousel-spin 0.8s linear infinite;
+}
+
+@keyframes carousel-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    {$cssId} .carousel-track,
+    {$cssId} .carousel-slide,
+    {$cssId} .carousel-spinner {
+        transition: none !important;
+        animation: none !important;
+    }
 }
 
 {$cssId} .carousel-slide {
@@ -926,7 +997,14 @@ let touchEndX = 0;
 
 function updateCarousel() {
     slides.forEach((slide, index) => {
-        slide.classList.toggle('active', index === currentIndex);
+        const isActive = index === currentIndex;
+        slide.classList.toggle('active', isActive);
+        slide.setAttribute('aria-hidden', !isActive);
+        if (isActive) {
+            slide.setAttribute('aria-current', 'true');
+        } else {
+            slide.removeAttribute('aria-current');
+        }
     });
     
     if (dots.length > 0) {
@@ -949,6 +1027,12 @@ function updateCarousel() {
             track.style.transform = `translateX(\${translateX}px)`;
         }
         // For fade transition, opacity is handled by CSS
+    }
+    
+    // Announce slide change to screen readers
+    const announcement = carouselEl.querySelector('.carousel-announcement');
+    if (announcement) {
+        announcement.textContent = `Slide \${currentIndex + 1} of \${slides.length}`;
     }
 }
 
@@ -1060,6 +1144,59 @@ if (typeof IntersectionObserver !== 'undefined') {
     lazyImages.forEach(img => {
         imageObserver.observe(img);
     });
+}
+
+// Check for prefers-reduced-motion and disable autoplay if needed
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (prefersReducedMotion && autoplay) {
+    autoplay = false;
+    if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+    }
+}
+
+// Image error handling
+const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub24gZGlzcG9uaWJsZTwvdGV4dD48L3N2Zz4=';
+const images = carouselEl.querySelectorAll('img');
+images.forEach(img => {
+    img.addEventListener('error', function() {
+        this.src = placeholderImage;
+        this.alt = 'Image non disponible';
+        this.setAttribute('aria-label', 'Image non disponible');
+    });
+});
+
+// Loading indicator management
+const loadingEl = carouselEl.querySelector('.carousel-loading');
+let loadedCount = 0;
+const totalImages = images.length;
+
+if (totalImages === 0 && loadingEl) {
+    loadingEl.classList.add('hidden');
+} else {
+    images.forEach(img => {
+        if (img.complete) {
+            loadedCount++;
+            checkAllLoaded();
+        } else {
+            img.addEventListener('load', () => {
+                loadedCount++;
+                checkAllLoaded();
+            });
+            img.addEventListener('error', () => {
+                loadedCount++;
+                checkAllLoaded();
+            });
+        }
+    });
+}
+
+function checkAllLoaded() {
+    if (loadedCount >= totalImages && loadingEl) {
+        loadingEl.classList.add('hidden');
+        loadingEl.setAttribute('aria-hidden', 'true');
+    }
 }
 
 // Initialize
