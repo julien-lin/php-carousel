@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace JulienLinard\Carousel;
 
+use JulienLinard\Carousel\Exception\InvalidCarouselTypeException;
+use JulienLinard\Carousel\Validator\IdSanitizer;
+use JulienLinard\Carousel\Validator\OptionsValidator;
+
 /**
  * Main Carousel class
  * 
@@ -21,15 +25,35 @@ class Carousel
     private string $type;
     private array $items = [];
     private array $options = [];
+    private ?CarouselRenderer $renderer = null;
 
     public function __construct(
         string $id,
         string $type = self::TYPE_IMAGE,
         array $options = []
     ) {
-        $this->id = $id;
+        // Sanitize ID
+        $this->id = IdSanitizer::sanitize($id);
+        
+        // Validate type
+        $validTypes = [
+            self::TYPE_IMAGE,
+            self::TYPE_CARD,
+            self::TYPE_TESTIMONIAL,
+            self::TYPE_GALLERY,
+            self::TYPE_SIMPLE,
+        ];
+        
+        if (!in_array($type, $validTypes, true)) {
+            throw new InvalidCarouselTypeException($type, $validTypes);
+        }
+        
         $this->type = $type;
-        $this->options = array_merge($this->getDefaultOptions(), $options);
+        
+        // Validate and merge options
+        $defaultOptions = $this->getDefaultOptions();
+        $validatedOptions = OptionsValidator::validate($options);
+        $this->options = array_merge($defaultOptions, $validatedOptions);
     }
 
     /**
@@ -37,6 +61,11 @@ class Carousel
      */
     public function addItem(CarouselItem|array $item): self
     {
+        // Limit number of items to prevent DoS
+        if (count($this->items) >= 100) {
+            throw new \RuntimeException('Maximum 100 items allowed per carousel');
+        }
+        
         if (is_array($item)) {
             $item = CarouselItem::fromArray($item);
         }
@@ -61,7 +90,8 @@ class Carousel
      */
     public function setOptions(array $options): self
     {
-        $this->options = array_merge($this->options, $options);
+        $validatedOptions = OptionsValidator::validate($options);
+        $this->options = array_merge($this->options, $validatedOptions);
         return $this;
     }
 
@@ -74,12 +104,22 @@ class Carousel
     }
 
     /**
+     * Get or create the renderer instance
+     */
+    private function getRenderer(): CarouselRenderer
+    {
+        if ($this->renderer === null) {
+            $this->renderer = new CarouselRenderer($this);
+        }
+        return $this->renderer;
+    }
+
+    /**
      * Render the carousel HTML
      */
     public function render(): string
     {
-        $renderer = new CarouselRenderer($this);
-        return $renderer->render();
+        return $this->getRenderer()->render();
     }
 
     /**
@@ -87,8 +127,7 @@ class Carousel
      */
     public function renderHtml(): string
     {
-        $renderer = new CarouselRenderer($this);
-        return $renderer->renderHtml();
+        return $this->getRenderer()->renderHtml();
     }
 
     /**
@@ -96,8 +135,7 @@ class Carousel
      */
     public function renderCss(): string
     {
-        $renderer = new CarouselRenderer($this);
-        return $renderer->renderCss();
+        return $this->getRenderer()->renderCss();
     }
 
     /**
@@ -105,8 +143,7 @@ class Carousel
      */
     public function renderJs(): string
     {
-        $renderer = new CarouselRenderer($this);
-        return $renderer->renderJs();
+        return $this->getRenderer()->renderJs();
     }
 
     /**

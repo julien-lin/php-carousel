@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace JulienLinard\Carousel;
 
 use JulienLinard\Carousel\Exception;
+use JulienLinard\Carousel\Helper\CssMinifier;
+use JulienLinard\Carousel\Helper\JsMinifier;
+use JulienLinard\Carousel\Validator\UrlValidator;
 
 /**
  * Renders carousel HTML, CSS and JavaScript
@@ -17,6 +20,17 @@ class CarouselRenderer
     public function __construct(Carousel $carousel)
     {
         $this->carousel = $carousel;
+    }
+
+    /**
+     * Escape a string for HTML output
+     * 
+     * @param string $value The value to escape
+     * @return string Escaped value
+     */
+    private function escape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /**
@@ -46,7 +60,7 @@ class CarouselRenderer
         }
         
         $transition = $options['transition'] ?? 'slide';
-        $html = '<div class="carousel-container" id="carousel-' . htmlspecialchars($id) . '" data-carousel-id="' . htmlspecialchars($id) . '" data-carousel-type="' . htmlspecialchars($type) . '" data-carousel-transition="' . htmlspecialchars($transition) . '">';
+        $html = '<div class="carousel-container" id="carousel-' . $this->escape($id) . '" data-carousel-id="' . $this->escape($id) . '" data-carousel-type="' . $this->escape($type) . '" data-carousel-transition="' . $this->escape($transition) . '">';
         
         // Wrapper
         $html .= '<div class="carousel-wrapper">';
@@ -92,7 +106,7 @@ class CarouselRenderer
             foreach ($items as $index => $item) {
                 $html .= '<button class="carousel-thumbnail' . ($index === 0 ? ' active' : '') . '" data-slide="' . $index . '" type="button">';
                 if ($item->image) {
-                    $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: 'Thumbnail ' . ($index + 1)) . '" loading="lazy">';
+                    $html .= '<img src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: 'Thumbnail ' . ($index + 1)) . '" loading="lazy">';
                 }
                 $html .= '</button>';
             }
@@ -113,16 +127,16 @@ class CarouselRenderer
         
         switch ($type) {
             case Carousel::TYPE_IMAGE:
-                $html .= $this->renderImageItem($item);
+                $html .= $this->renderImageItem($item, $index);
                 break;
             case Carousel::TYPE_CARD:
-                $html .= $this->renderCardItem($item);
+                $html .= $this->renderCardItem($item, $index);
                 break;
             case Carousel::TYPE_TESTIMONIAL:
                 $html .= $this->renderTestimonialItem($item);
                 break;
             case Carousel::TYPE_GALLERY:
-                $html .= $this->renderGalleryItem($item);
+                $html .= $this->renderGalleryItem($item, $index);
                 break;
             default:
                 $html .= $this->renderSimpleItem($item);
@@ -135,25 +149,32 @@ class CarouselRenderer
     /**
      * Render image item
      */
-    private function renderImageItem(CarouselItem $item): string
+    private function renderImageItem(CarouselItem $item, int $index): string
     {
         $html = '';
+        $lazyLoad = $this->carousel->getOption('lazyLoad', true);
+        // Load first 2 slides immediately, lazy load the rest
+        $shouldLazyLoad = $lazyLoad && $index > 1;
         
         if ($item->link) {
-            $html .= '<a href="' . htmlspecialchars($item->link) . '" class="carousel-image-link">';
+            $html .= '<a href="' . UrlValidator::sanitize($item->link) . '" class="carousel-image-link">';
         }
         
         if ($item->image) {
-            $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: '') . '" class="carousel-image" loading="lazy">';
+            if ($shouldLazyLoad) {
+                $html .= '<img data-src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" class="carousel-image" loading="lazy">';
+            } else {
+                $html .= '<img src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" class="carousel-image">';
+            }
         }
         
         if ($item->title || $item->content) {
             $html .= '<div class="carousel-caption">';
             if ($item->title) {
-                $html .= '<h3 class="carousel-title">' . htmlspecialchars($item->title) . '</h3>';
+                $html .= '<h3 class="carousel-title">' . $this->escape($item->title) . '</h3>';
             }
             if ($item->content) {
-                $html .= '<p class="carousel-content">' . htmlspecialchars($item->content) . '</p>';
+                $html .= '<p class="carousel-content">' . $this->escape($item->content) . '</p>';
             }
             $html .= '</div>';
         }
@@ -168,25 +189,31 @@ class CarouselRenderer
     /**
      * Render card item
      */
-    private function renderCardItem(CarouselItem $item): string
+    private function renderCardItem(CarouselItem $item, int $index): string
     {
         $html = '<div class="carousel-card">';
+        $lazyLoad = $this->carousel->getOption('lazyLoad', true);
+        $shouldLazyLoad = $lazyLoad && $index > 1;
         
         if ($item->image) {
             $html .= '<div class="carousel-card-image">';
-            $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: '') . '" loading="lazy">';
+            if ($shouldLazyLoad) {
+                $html .= '<img data-src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" loading="lazy">';
+            } else {
+                $html .= '<img src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '">';
+            }
             $html .= '</div>';
         }
         
         $html .= '<div class="carousel-card-body">';
         if ($item->title) {
-            $html .= '<h3 class="carousel-card-title">' . htmlspecialchars($item->title) . '</h3>';
+            $html .= '<h3 class="carousel-card-title">' . $this->escape($item->title) . '</h3>';
         }
         if ($item->content) {
-            $html .= '<p class="carousel-card-content">' . htmlspecialchars($item->content) . '</p>';
+            $html .= '<p class="carousel-card-content">' . $this->escape($item->content) . '</p>';
         }
         if ($item->link) {
-            $html .= '<a href="' . htmlspecialchars($item->link) . '" class="carousel-card-link">Learn more</a>';
+            $html .= '<a href="' . UrlValidator::sanitize($item->link) . '" class="carousel-card-link">Learn more</a>';
         }
         $html .= '</div>';
         
@@ -203,17 +230,17 @@ class CarouselRenderer
         
         if ($item->content) {
             $html .= '<blockquote class="carousel-testimonial-quote">';
-            $html .= '<p>' . htmlspecialchars($item->content) . '</p>';
+            $html .= '<p>' . $this->escape($item->content) . '</p>';
             $html .= '</blockquote>';
         }
         
         if ($item->title) {
             $html .= '<div class="carousel-testimonial-author">';
             if ($item->image) {
-                $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title) . '" class="carousel-testimonial-avatar" loading="lazy">';
+                $html .= '<img src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title) . '" class="carousel-testimonial-avatar" loading="lazy">';
             }
             $html .= '<div class="carousel-testimonial-info">';
-            $html .= '<cite class="carousel-testimonial-name">' . htmlspecialchars($item->title) . '</cite>';
+            $html .= '<cite class="carousel-testimonial-name">' . $this->escape($item->title) . '</cite>';
             $html .= '</div>';
             $html .= '</div>';
         }
@@ -225,21 +252,27 @@ class CarouselRenderer
     /**
      * Render gallery item
      */
-    private function renderGalleryItem(CarouselItem $item): string
+    private function renderGalleryItem(CarouselItem $item, int $index): string
     {
         $html = '<div class="carousel-gallery-item">';
+        $lazyLoad = $this->carousel->getOption('lazyLoad', true);
+        $shouldLazyLoad = $lazyLoad && $index > 1;
         
         if ($item->image) {
-            $html .= '<img src="' . htmlspecialchars($item->image) . '" alt="' . htmlspecialchars($item->title ?: '') . '" class="carousel-gallery-image" loading="lazy">';
+            if ($shouldLazyLoad) {
+                $html .= '<img data-src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" class="carousel-gallery-image" loading="lazy">';
+            } else {
+                $html .= '<img src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" class="carousel-gallery-image">';
+            }
         }
         
         if ($item->title || $item->content) {
             $html .= '<div class="carousel-gallery-caption">';
             if ($item->title) {
-                $html .= '<h4 class="carousel-gallery-title">' . htmlspecialchars($item->title) . '</h4>';
+                $html .= '<h4 class="carousel-gallery-title">' . $this->escape($item->title) . '</h4>';
             }
             if ($item->content) {
-                $html .= '<p class="carousel-gallery-content">' . htmlspecialchars($item->content) . '</p>';
+                $html .= '<p class="carousel-gallery-content">' . $this->escape($item->content) . '</p>';
             }
             $html .= '</div>';
         }
@@ -256,11 +289,11 @@ class CarouselRenderer
         $html = '<div class="carousel-simple-item">';
         
         if ($item->title) {
-            $html .= '<h3>' . htmlspecialchars($item->title) . '</h3>';
+            $html .= '<h3>' . $this->escape($item->title) . '</h3>';
         }
         
         if ($item->content) {
-            $html .= '<div>' . htmlspecialchars($item->content) . '</div>';
+            $html .= '<div>' . $this->escape($item->content) . '</div>';
         }
         
         $html .= '</div>';
@@ -286,7 +319,7 @@ class CarouselRenderer
         $gap = $options['gap'] ?? 16;
         $transitionDuration = ($options['transitionDuration'] ?? 500) . 'ms';
         
-        $css = '<style id="carousel-style-' . $id . '">';
+        $css = '<style id="carousel-style-' . $this->escape($id) . '">';
         
         // Base styles
         $css .= $this->getBaseCss($cssId, $gap, $transitionDuration);
@@ -313,6 +346,16 @@ class CarouselRenderer
         }
         
         $css .= '</style>';
+        
+        // Minify CSS if option is enabled
+        $minify = $options['minify'] ?? false;
+        if ($minify) {
+            // Extract CSS content (between <style> tags)
+            $cssContent = preg_replace('/<style[^>]*>/', '', $css);
+            $cssContent = preg_replace('/<\/style>/', '', $cssContent);
+            $minified = CssMinifier::minify($cssContent);
+            $css = '<style id="carousel-style-' . $this->escape($id) . '">' . $minified . '</style>';
+        }
         
         return $css;
     }
@@ -780,15 +823,25 @@ CSS;
         }
         self::$renderedCarousels[$id . '_js'] = true;
         
-        $js = '<script id="carousel-script-' . $id . '">';
+        $js = '<script id="carousel-script-' . $this->escape($id) . '">';
         $js .= '(function() {';
-        $js .= 'const carousel = document.getElementById("carousel-' . $id . '");';
+        $js .= 'const carousel = document.getElementById("carousel-' . $this->escape($id) . '");';
         $js .= 'if (!carousel) return;';
         
         $js .= $this->getCarouselJs($id, $options);
         
         $js .= '})();';
         $js .= '</script>';
+        
+        // Minify JS if option is enabled
+        $minify = $options['minify'] ?? false;
+        if ($minify) {
+            // Extract JS content (between <script> tags)
+            $jsContent = preg_replace('/<script[^>]*>/', '', $js);
+            $jsContent = preg_replace('/<\/script>/', '', $jsContent);
+            $minified = JsMinifier::minify($jsContent);
+            $js = '<script id="carousel-script-' . $this->escape($id) . '">' . $minified . '</script>';
+        }
         
         return $js;
     }
@@ -817,12 +870,51 @@ const thumbnails = Array.from(carouselEl.querySelectorAll('.carousel-thumbnail')
 
 let currentIndex = 0;
 let autoplayTimer = null;
+let resizeTimer = null;
+let resizeRAF = null;
+let imageObserver = null;
 const autoplay = {$autoplay};
 const autoplayInterval = {$autoplayInterval};
 const loop = {$loop};
 const transition = "{$transition}";
 const keyboardNav = {$keyboardNav};
 const touchSwipe = {$touchSwipe};
+
+// Store event handler references for cleanup
+const handlePrevClick = () => prevSlide();
+const handleNextClick = () => nextSlide();
+const handleKeydown = (e) => {
+    if (e.key === 'ArrowLeft') {
+        prevSlide();
+    } else if (e.key === 'ArrowRight') {
+        nextSlide();
+    }
+};
+const handleTouchStart = (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+};
+const handleTouchEnd = (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+};
+const handleMouseEnter = () => {
+    if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+    }
+};
+const handleMouseLeave = () => {
+    resetAutoplay();
+};
+const handleResize = () => {
+    if (resizeRAF) return;
+    resizeRAF = requestAnimationFrame(() => {
+        updateCarousel();
+        resizeRAF = null;
+    });
+};
+
+let touchStartX = 0;
+let touchEndX = 0;
 
 function updateCarousel() {
     slides.forEach((slide, index) => {
@@ -881,83 +973,84 @@ function resetAutoplay() {
     }
 }
 
+function handleSwipe() {
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+        if (diff > 0) {
+            nextSlide();
+        } else {
+            prevSlide();
+        }
+    }
+}
+
 // Navigation buttons
 if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-        prevSlide();
-    });
+    prevBtn.addEventListener('click', handlePrevClick);
 }
 
 if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-        nextSlide();
-    });
+    nextBtn.addEventListener('click', handleNextClick);
 }
 
-// Dots navigation
+// Dots navigation - store handlers for cleanup
+const dotHandlers = [];
 dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => {
-        goToSlide(index);
-    });
+    const handler = () => goToSlide(index);
+    dotHandlers.push({ dot, handler });
+    dot.addEventListener('click', handler);
 });
 
-// Thumbnails navigation
+// Thumbnails navigation - store handlers for cleanup
+const thumbnailHandlers = [];
 thumbnails.forEach((thumb, index) => {
-    thumb.addEventListener('click', () => {
-        goToSlide(index);
-    });
+    const handler = () => goToSlide(index);
+    thumbnailHandlers.push({ thumb, handler });
+    thumb.addEventListener('click', handler);
 });
 
 // Keyboard navigation
 if (keyboardNav) {
-    carouselEl.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') {
-            prevSlide();
-        } else if (e.key === 'ArrowRight') {
-            nextSlide();
-        }
-    });
+    carouselEl.addEventListener('keydown', handleKeydown);
     carouselEl.setAttribute('tabindex', '0');
 }
 
 // Touch swipe
 if (touchSwipe) {
-    let touchStartX = 0;
-    let touchEndX = 0;
-    
-    carouselEl.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    });
-    
-    carouselEl.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    });
-    
-    function handleSwipe() {
-        const swipeThreshold = 50;
-        const diff = touchStartX - touchEndX;
-        
-        if (Math.abs(diff) > swipeThreshold) {
-            if (diff > 0) {
-                nextSlide();
-            } else {
-                prevSlide();
-            }
-        }
-    }
+    carouselEl.addEventListener('touchstart', handleTouchStart);
+    carouselEl.addEventListener('touchend', handleTouchEnd);
 }
 
 // Pause autoplay on hover
 if (autoplay) {
-    carouselEl.addEventListener('mouseenter', () => {
-        if (autoplayTimer) {
-            clearInterval(autoplayTimer);
-        }
+    carouselEl.addEventListener('mouseenter', handleMouseEnter);
+    carouselEl.addEventListener('mouseleave', handleMouseLeave);
+}
+
+// Lazy loading with Intersection Observer
+if (typeof IntersectionObserver !== 'undefined') {
+    imageObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                    imageObserver.unobserve(img);
+                }
+            }
+        });
+    }, { 
+        rootMargin: '50px',
+        threshold: 0.01 
     });
     
-    carouselEl.addEventListener('mouseleave', () => {
-        resetAutoplay();
+    // Observe all images with data-src
+    const lazyImages = carouselEl.querySelectorAll('img[data-src]');
+    lazyImages.forEach(img => {
+        imageObserver.observe(img);
     });
 }
 
@@ -965,14 +1058,77 @@ if (autoplay) {
 updateCarousel();
 resetAutoplay();
 
-// Handle window resize
-let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        updateCarousel();
-    }, 250);
-});
+// Handle window resize with requestAnimationFrame
+window.addEventListener('resize', handleResize);
+
+// Cleanup function
+function destroy() {
+    // Clear timers
+    if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+    }
+    if (resizeTimer) {
+        clearTimeout(resizeTimer);
+        resizeTimer = null;
+    }
+    if (resizeRAF) {
+        cancelAnimationFrame(resizeRAF);
+        resizeRAF = null;
+    }
+    
+    // Remove event listeners
+    if (prevBtn) {
+        prevBtn.removeEventListener('click', handlePrevClick);
+    }
+    if (nextBtn) {
+        nextBtn.removeEventListener('click', handleNextClick);
+    }
+    
+    dotHandlers.forEach(({ dot, handler }) => {
+        dot.removeEventListener('click', handler);
+    });
+    
+    thumbnailHandlers.forEach(({ thumb, handler }) => {
+        thumb.removeEventListener('click', handler);
+    });
+    
+    if (keyboardNav) {
+        carouselEl.removeEventListener('keydown', handleKeydown);
+    }
+    
+    if (touchSwipe) {
+        carouselEl.removeEventListener('touchstart', handleTouchStart);
+        carouselEl.removeEventListener('touchend', handleTouchEnd);
+    }
+    
+    if (autoplay) {
+        carouselEl.removeEventListener('mouseenter', handleMouseEnter);
+        carouselEl.removeEventListener('mouseleave', handleMouseLeave);
+    }
+    
+    window.removeEventListener('resize', handleResize);
+    
+    // Unobserve images
+    if (imageObserver) {
+        const lazyImages = carouselEl.querySelectorAll('img[data-src]');
+        lazyImages.forEach(img => {
+            imageObserver.unobserve(img);
+        });
+        imageObserver.disconnect();
+        imageObserver = null;
+    }
+}
+
+// Expose destroy method and controls
+window.carouselInstances = window.carouselInstances || {};
+window.carouselInstances[carouselId] = { 
+    destroy, 
+    goToSlide, 
+    nextSlide, 
+    prevSlide,
+    getCurrentIndex: () => currentIndex
+};
 
 JS;
     }
