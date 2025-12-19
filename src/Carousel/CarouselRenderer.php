@@ -8,6 +8,8 @@ use JulienLinard\Carousel\Exception;
 use JulienLinard\Carousel\Helper\CssMinifier;
 use JulienLinard\Carousel\Helper\JsMinifier;
 use JulienLinard\Carousel\Image\ImageSourceSet;
+use JulienLinard\Carousel\JavaScript\CarouselAPI;
+use JulienLinard\Carousel\JavaScript\CarouselInstance;
 use JulienLinard\Carousel\Translator\TranslatorInterface;
 use JulienLinard\Carousel\Translator\ArrayTranslator;
 use JulienLinard\Carousel\Validator\UrlValidator;
@@ -933,7 +935,21 @@ CSS;
         }
         self::$renderedCarousels[$id . '_js'] = true;
         
-        $js = '<script id="carousel-script-' . $this->escape($id) . '">';
+        // Include CarouselAPI and CarouselInstance (only once globally)
+        $apiIncluded = isset(self::$renderedCarousels['_api']);
+        if (!$apiIncluded) {
+            self::$renderedCarousels['_api'] = true;
+            $js = '<script id="carousel-api">';
+            $js .= CarouselAPI::generate();
+            $js .= "\n";
+            $js .= CarouselInstance::generate();
+            $js .= '</script>';
+            $js .= "\n";
+        } else {
+            $js = '';
+        }
+        
+        $js .= '<script id="carousel-script-' . $this->escape($id) . '">';
         $js .= '(function() {';
         $js .= 'const carousel = document.getElementById("carousel-' . $this->escape($id) . '");';
         $js .= 'if (!carousel) return;';
@@ -1312,15 +1328,28 @@ function destroy() {
     }
 }
 
-// Expose destroy method and controls
+// Expose destroy method and controls (for backward compatibility)
 window.carouselInstances = window.carouselInstances || {};
 window.carouselInstances[carouselId] = { 
     destroy, 
     goToSlide, 
     nextSlide, 
     prevSlide,
-    getCurrentIndex: () => currentIndex
+    getCurrentIndex: () => currentIndex,
+    resetAutoplay: resetAutoplay
 };
+
+// Initialize via CarouselAPI if available
+if (typeof window.CarouselAPI !== 'undefined') {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            window.CarouselAPI.init(carouselId);
+        });
+    } else {
+        window.CarouselAPI.init(carouselId);
+    }
+}
 
 JS;
     }
