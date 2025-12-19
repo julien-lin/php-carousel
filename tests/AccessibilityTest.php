@@ -80,7 +80,7 @@ class AccessibilityTest extends TestCase
         $this->assertStringContainsString('carousel-loading', $html);
         $this->assertStringContainsString('carousel-spinner', $html);
         $this->assertStringContainsString('role="status"', $html);
-        $this->assertStringContainsString('aria-label="Chargement du carousel"', $html);
+        $this->assertStringContainsString('aria-label="Loading carousel"', $html);
         $this->assertStringContainsString('aria-hidden="true"', $html);
     }
 
@@ -160,7 +160,8 @@ class AccessibilityTest extends TestCase
         $this->assertStringContainsString('placeholderImage', $js);
         $this->assertStringContainsString('data:image/svg+xml', $js);
         $this->assertStringContainsString('addEventListener(\'error\'', $js);
-        $this->assertStringContainsString('Image non disponible', $js);
+        $this->assertStringContainsString('Image unavailable', $js);
+        $this->assertStringContainsString('imageUnavailableText', $js);
     }
 
     /**

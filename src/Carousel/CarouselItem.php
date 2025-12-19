@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace JulienLinard\Carousel;
 
+use JulienLinard\Carousel\Image\ImageSourceSet;
 use JulienLinard\Carousel\Validator\IdSanitizer;
 use JulienLinard\Carousel\Validator\UrlValidator;
 
@@ -12,6 +13,8 @@ use JulienLinard\Carousel\Validator\UrlValidator;
  */
 class CarouselItem
 {
+    private ?ImageSourceSet $imageSourceSet = null;
+
     public function __construct(
         public string $id,
         public string $title = '',
@@ -65,6 +68,38 @@ class CarouselItem
             link: $data['link'] ?? '',
             attributes: $data['attributes'] ?? []
         );
+    }
+
+    /**
+     * Set image source set for responsive images
+     * 
+     * @param ImageSourceSet $sourceSet Image source set
+     * @return self
+     */
+    public function setImageSourceSet(ImageSourceSet $sourceSet): self
+    {
+        $this->imageSourceSet = $sourceSet;
+        return $this;
+    }
+
+    /**
+     * Get image source set
+     * 
+     * @return ImageSourceSet|null
+     */
+    public function getImageSourceSet(): ?ImageSourceSet
+    {
+        return $this->imageSourceSet;
+    }
+
+    /**
+     * Check if item has responsive image source set
+     * 
+     * @return bool
+     */
+    public function hasImageSourceSet(): bool
+    {
+        return $this->imageSourceSet !== null;
     }
 
     /**

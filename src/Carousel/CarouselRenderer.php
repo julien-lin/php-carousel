@@ -7,6 +7,9 @@ namespace JulienLinard\Carousel;
 use JulienLinard\Carousel\Exception;
 use JulienLinard\Carousel\Helper\CssMinifier;
 use JulienLinard\Carousel\Helper\JsMinifier;
+use JulienLinard\Carousel\Image\ImageSourceSet;
+use JulienLinard\Carousel\Translator\TranslatorInterface;
+use JulienLinard\Carousel\Translator\ArrayTranslator;
 use JulienLinard\Carousel\Validator\UrlValidator;
 
 /**
@@ -15,11 +18,21 @@ use JulienLinard\Carousel\Validator\UrlValidator;
 class CarouselRenderer
 {
     private Carousel $carousel;
+    private TranslatorInterface $translator;
     private static array $renderedCarousels = [];
 
     public function __construct(Carousel $carousel)
     {
         $this->carousel = $carousel;
+        
+        // Get translator from options or create default
+        $options = $carousel->getOptions();
+        $this->translator = $options['translator'] ?? new ArrayTranslator([], $options['locale'] ?? 'en');
+        
+        // Set locale if provided
+        if (isset($options['locale'])) {
+            $this->translator->setLocale($options['locale']);
+        }
     }
 
     /**
@@ -63,7 +76,7 @@ class CarouselRenderer
         $html = '<div class="carousel-container" id="carousel-' . $this->escape($id) . '" data-carousel-id="' . $this->escape($id) . '" data-carousel-type="' . $this->escape($type) . '" data-carousel-transition="' . $this->escape($transition) . '">';
         
         // Loading indicator
-        $html .= '<div class="carousel-loading" aria-hidden="true" role="status" aria-label="Chargement du carousel">';
+        $html .= '<div class="carousel-loading" aria-hidden="true" role="status" aria-label="' . $this->escape($this->translator->translate('loading')) . '">';
         $html .= '<div class="carousel-spinner"></div>';
         $html .= '</div>';
         
@@ -74,7 +87,7 @@ class CarouselRenderer
         $html .= '<div class="carousel-wrapper">';
         
         // Track
-        $html .= '<div class="carousel-track" role="region" aria-label="Carousel" aria-live="polite" aria-atomic="true">';
+        $html .= '<div class="carousel-track" role="region" aria-label="' . $this->escape($this->translator->translate('carousel')) . '" aria-live="polite" aria-atomic="true">';
         
         foreach ($items as $index => $item) {
             $html .= $this->renderItem($item, $index, $type);
@@ -84,13 +97,13 @@ class CarouselRenderer
         
         // Navigation arrows
         if ($options['showArrows'] ?? true) {
-            $html .= '<button class="carousel-arrow carousel-arrow-prev" aria-label="Previous slide" type="button">';
+            $html .= '<button class="carousel-arrow carousel-arrow-prev" aria-label="' . $this->escape($this->translator->translate('previous_slide')) . '" type="button">';
             $html .= '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
             $html .= '<path d="M15 18l-6-6 6-6"/>';
             $html .= '</svg>';
             $html .= '</button>';
             
-            $html .= '<button class="carousel-arrow carousel-arrow-next" aria-label="Next slide" type="button">';
+            $html .= '<button class="carousel-arrow carousel-arrow-next" aria-label="' . $this->escape($this->translator->translate('next_slide')) . '" type="button">';
             $html .= '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
             $html .= '<path d="M9 18l6-6-6-6"/>';
             $html .= '</svg>';
@@ -103,7 +116,7 @@ class CarouselRenderer
         if (($options['showDots'] ?? true) && count($items) > 1) {
             $html .= '<div class="carousel-dots" role="tablist">';
             foreach ($items as $index => $item) {
-                $html .= '<button class="carousel-dot' . ($index === 0 ? ' active' : '') . '" role="tab" aria-label="Go to slide ' . ($index + 1) . '" data-slide="' . $index . '" type="button"></button>';
+                $html .= '<button class="carousel-dot' . ($index === 0 ? ' active' : '') . '" role="tab" aria-label="' . $this->escape($this->translator->translate('go_to_slide', null, ['index' => $index + 1])) . '" data-slide="' . $index . '" type="button"></button>';
             }
             $html .= '</div>';
         }
@@ -139,7 +152,7 @@ class CarouselRenderer
         $html .= 'data-slide-index="' . $index . '" ';
         $html .= 'role="group" ';
         $html .= 'aria-roledescription="slide" ';
-        $html .= 'aria-label="Slide ' . ($index + 1) . ' of ' . $totalSlides . '" ';
+        $html .= 'aria-label="' . $this->escape($this->translator->translate('slide_of', null, ['current' => $index + 1, 'total' => $totalSlides])) . '" ';
         $html .= 'aria-hidden="' . ($isActive ? 'false' : 'true') . '" ';
         if ($isActive) {
             $html .= 'aria-current="true" ';
@@ -185,7 +198,13 @@ class CarouselRenderer
             $html .= '<a href="' . UrlValidator::sanitize($item->link) . '" class="carousel-image-link">';
         }
         
-        if ($item->image) {
+        if ($item->hasImageSourceSet()) {
+            // Use responsive image source set
+            $html .= '<div class="carousel-image-wrapper">';
+            $html .= $item->getImageSourceSet()->render(!$shouldLazyLoad);
+            $html .= '</div>';
+        } elseif ($item->image) {
+            // Fallback to regular image
             if ($shouldLazyLoad) {
                 $html .= '<img data-src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" class="carousel-image" loading="lazy">';
             } else {
@@ -220,7 +239,13 @@ class CarouselRenderer
         $lazyLoad = $this->carousel->getOption('lazyLoad', true);
         $shouldLazyLoad = $lazyLoad && $index > 1;
         
-        if ($item->image) {
+        if ($item->hasImageSourceSet()) {
+            // Use responsive image source set
+            $html .= '<div class="carousel-card-image">';
+            $html .= $item->getImageSourceSet()->render(!$shouldLazyLoad);
+            $html .= '</div>';
+        } elseif ($item->image) {
+            // Fallback to regular image
             $html .= '<div class="carousel-card-image">';
             if ($shouldLazyLoad) {
                 $html .= '<img data-src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" loading="lazy">';
@@ -283,7 +308,13 @@ class CarouselRenderer
         $lazyLoad = $this->carousel->getOption('lazyLoad', true);
         $shouldLazyLoad = $lazyLoad && $index > 1;
         
-        if ($item->image) {
+        if ($item->hasImageSourceSet()) {
+            // Use responsive image source set
+            $html .= '<div class="carousel-gallery-image-wrapper">';
+            $html .= $item->getImageSourceSet()->render(!$shouldLazyLoad);
+            $html .= '</div>';
+        } elseif ($item->image) {
+            // Fallback to regular image
             if ($shouldLazyLoad) {
                 $html .= '<img data-src="' . $this->escape($item->image) . '" alt="' . $this->escape($item->title ?: '') . '" class="carousel-gallery-image" loading="lazy">';
             } else {
@@ -937,6 +968,15 @@ CSS;
         $keyboardNav = $options['keyboardNavigation'] ?? true ? 'true' : 'false';
         $touchSwipe = $options['touchSwipe'] ?? true ? 'true' : 'false';
         
+        // Get translations for JavaScript
+        $translations = [
+            'slide_of' => $this->translator->translate('slide_of', null, ['current' => '{current}', 'total' => '{total}']),
+            'image_unavailable' => $this->translator->translate('image_unavailable'),
+        ];
+        
+        // Escape for JavaScript
+        $translationsJs = json_encode($translations, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        
         return <<<JS
 const carouselId = "{$id}";
 const carouselEl = carousel;
@@ -946,6 +986,9 @@ const prevBtn = carouselEl.querySelector('.carousel-arrow-prev');
 const nextBtn = carouselEl.querySelector('.carousel-arrow-next');
 const dots = Array.from(carouselEl.querySelectorAll('.carousel-dot'));
 const thumbnails = Array.from(carouselEl.querySelectorAll('.carousel-thumbnail'));
+
+// Translations
+const translations = {$translationsJs};
 
 let currentIndex = 0;
 let autoplayTimer = null;
@@ -1032,7 +1075,10 @@ function updateCarousel() {
     // Announce slide change to screen readers
     const announcement = carouselEl.querySelector('.carousel-announcement');
     if (announcement) {
-        announcement.textContent = `Slide \${currentIndex + 1} of \${slides.length}`;
+        const slideText = translations.slide_of
+            .replace('{current}', currentIndex + 1)
+            .replace('{total}', slides.length);
+        announcement.textContent = slideText;
     }
 }
 
@@ -1159,11 +1205,12 @@ if (prefersReducedMotion && autoplay) {
 // Image error handling
 const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBub24gZGlzcG9uaWJsZTwvdGV4dD48L3N2Zz4=';
 const images = carouselEl.querySelectorAll('img');
+const imageUnavailableText = translations.image_unavailable;
 images.forEach(img => {
     img.addEventListener('error', function() {
         this.src = placeholderImage;
-        this.alt = 'Image non disponible';
-        this.setAttribute('aria-label', 'Image non disponible');
+        this.alt = imageUnavailableText;
+        this.setAttribute('aria-label', imageUnavailableText);
     });
 });
 
