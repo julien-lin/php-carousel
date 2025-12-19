@@ -229,10 +229,7 @@ class JavaScriptApiTest extends TestCase
     public function testCarouselJavaScriptIncludesCarouselAPIScript(): void
     {
         // Reset static cache to ensure API is included
-        $reflection = new \ReflectionClass(\JulienLinard\Carousel\CarouselRenderer::class);
-        $property = $reflection->getProperty('renderedCarousels');
-        $property->setAccessible(true);
-        $property->setValue(null, []);
+        \JulienLinard\Carousel\Renderer\RenderCacheService::clear();
         
         $carousel = Carousel::image('test-' . uniqid(), ['image1.jpg']);
         $js = $carousel->renderJs();
@@ -247,10 +244,7 @@ class JavaScriptApiTest extends TestCase
     public function testCarouselJavaScriptIncludesCarouselInstanceClass(): void
     {
         // Reset static cache to ensure API is included
-        $reflection = new \ReflectionClass(\JulienLinard\Carousel\CarouselRenderer::class);
-        $property = $reflection->getProperty('renderedCarousels');
-        $property->setAccessible(true);
-        $property->setValue(null, []);
+        \JulienLinard\Carousel\Renderer\RenderCacheService::clear();
         
         $carousel = Carousel::image('test-' . uniqid(), ['image1.jpg']);
         $js = $carousel->renderJs();
@@ -264,10 +258,7 @@ class JavaScriptApiTest extends TestCase
     public function testMultipleCarouselsOnlyIncludeAPIOnce(): void
     {
         // Reset static cache
-        $reflection = new \ReflectionClass(\JulienLinard\Carousel\CarouselRenderer::class);
-        $property = $reflection->getProperty('renderedCarousels');
-        $property->setAccessible(true);
-        $property->setValue(null, []);
+        \JulienLinard\Carousel\Renderer\RenderCacheService::clear();
         
         $carousel1 = Carousel::image('test1-' . uniqid(), ['image1.jpg']);
         $carousel2 = Carousel::image('test2-' . uniqid(), ['image2.jpg']);
@@ -303,10 +294,7 @@ class JavaScriptApiTest extends TestCase
     public function testAPIIncludedBeforeCarouselScript(): void
     {
         // Reset static cache
-        $reflection = new \ReflectionClass(\JulienLinard\Carousel\CarouselRenderer::class);
-        $property = $reflection->getProperty('renderedCarousels');
-        $property->setAccessible(true);
-        $property->setValue(null, []);
+        \JulienLinard\Carousel\Renderer\RenderCacheService::clear();
         
         $carousel = Carousel::image('test-' . uniqid(), ['image1.jpg']);
         $js = $carousel->renderJs();

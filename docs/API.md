@@ -713,6 +713,39 @@ $carousel = Carousel::image('gallery', $images, [
 
 ---
 
+## Renderer Architecture
+
+Since version 3.0.0, the carousel uses a modular renderer architecture with separate renderers for HTML, CSS, and JavaScript:
+
+- **`CompositeRenderer`**: Combines HTML, CSS, and JS renderers
+- **`HtmlRenderer`**: Renders only the HTML structure
+- **`CssRenderer`**: Renders only the CSS styles
+- **`JsRenderer`**: Renders only the JavaScript code
+
+This architecture provides:
+- **Separation of Concerns**: Each renderer handles one aspect
+- **Better Testability**: Each renderer can be tested independently
+- **Improved Maintainability**: Easier to modify and extend
+- **Performance**: Optimized caching per renderer type
+
+The `Carousel` class uses `CompositeRenderer` internally. You can access individual renderers if needed:
+
+```php
+$carousel = Carousel::image('my-carousel', ['image1.jpg']);
+
+// Get the composite renderer
+$renderer = $carousel->getRenderer(); // Returns CompositeRenderer
+
+// Access individual renderers
+$htmlRenderer = $renderer->getHtmlRenderer();
+$cssRenderer = $renderer->getCssRenderer();
+$jsRenderer = $renderer->getJsRenderer();
+```
+
+> **Note**: The old `CarouselRenderer` class is deprecated and should not be used directly. It is kept only for backward compatibility in tests.
+
+---
+
 ## Support
 
 - **Issues**: https://github.com/julien-lin/php-carousel/issues

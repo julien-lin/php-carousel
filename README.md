@@ -149,7 +149,7 @@ Advanced gallery with thumbnail navigation for easy browsing.
 - ✅ **Customizable** - Extensive configuration options
 - ✅ **WCAG 2.1 AA Compliant** - Full accessibility support (ARIA, screen readers, prefers-reduced-motion)
 - ✅ **Security** - XSS prevention, URL validation, input sanitization
-- ✅ **Performance** - Singleton renderer, optimized JavaScript, CSS/JS minification
+- ✅ **Performance** - Modular renderer architecture, optimized JavaScript, CSS/JS minification
 - ✅ **Error Handling** - Image error placeholders, loading indicators
 
 ## 📖 Documentation
