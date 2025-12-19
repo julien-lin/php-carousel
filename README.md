@@ -137,15 +137,20 @@ Advanced gallery with thumbnail navigation for easy browsing.
 ## 📋 Features
 
 - ✅ **Zero Dependencies** - Pure CSS/JS native implementation
-- ✅ **Multiple Types** - Image, Card, Testimonial, Gallery carousels
+- ✅ **Multiple Types** - Image, Card, Testimonial, Gallery, Infinite carousels
+- ✅ **Static Factory Methods** - `infiniteCarousel()`, `heroBanner()`, `productShowcase()`, `testimonialSlider()`
+- ✅ **Twig & Blade Integration** - Ready-to-use extensions for popular templating engines
 - ✅ **Fully Responsive** - Mobile, tablet, and desktop optimized
 - ✅ **Touch Swipe** - Native touch gestures support
 - ✅ **Keyboard Navigation** - Accessible keyboard controls
 - ✅ **Autoplay** - Configurable autoplay with pause on hover
 - ✅ **Smooth Animations** - CSS transitions and transforms
-- ✅ **Lazy Loading** - Built-in image lazy loading
+- ✅ **Lazy Loading** - Built-in image lazy loading with Intersection Observer
 - ✅ **Customizable** - Extensive configuration options
-- ✅ **Accessible** - ARIA labels and semantic HTML
+- ✅ **WCAG 2.1 AA Compliant** - Full accessibility support (ARIA, screen readers, prefers-reduced-motion)
+- ✅ **Security** - XSS prevention, URL validation, input sanitization
+- ✅ **Performance** - Singleton renderer, optimized JavaScript, CSS/JS minification
+- ✅ **Error Handling** - Image error placeholders, loading indicators
 
 ## 📖 Documentation
 
@@ -325,10 +330,14 @@ You can override styles using CSS:
 
 #### Static Factory Methods
 
-- `Carousel::image(string $id, array $images, array $options = []): self`
-- `Carousel::card(string $id, array $cards, array $options = []): self`
-- `Carousel::testimonial(string $id, array $testimonials, array $options = []): self`
-- `Carousel::gallery(string $id, array $images, array $options = []): self`
+- `Carousel::image(string $id, array $images, array $options = []): self` - Image carousel
+- `Carousel::card(string $id, array $cards, array $options = []): self` - Card carousel
+- `Carousel::testimonial(string $id, array $testimonials, array $options = []): self` - Testimonial carousel
+- `Carousel::gallery(string $id, array $images, array $options = []): self` - Gallery carousel
+- `Carousel::infiniteCarousel(string $id, array $images, array $options = []): self` - Infinite scrolling carousel
+- `Carousel::heroBanner(string $id, array $banners, array $options = []): self` - Hero banner carousel
+- `Carousel::productShowcase(string $id, array $products, array $options = []): self` - Product showcase carousel
+- `Carousel::testimonialSlider(string $id, array $testimonials, array $options = []): self` - Testimonial slider
 
 #### Instance Methods
 
@@ -473,11 +482,55 @@ $carousel = Carousel::testimonial('testimonials', $testimonials, [
 echo $carousel->render();
 ```
 
+## 🔌 Integrations
+
+### Twig Integration
+
+See [INTEGRATION_TWIG.md](DOCUMENTATION/INTEGRATION_TWIG.md) for complete documentation.
+
+```twig
+{# Simple usage #}
+{{ carousel_infinite('products', images)|raw }}
+
+{# With options #}
+{{ carousel_hero('banner', banners, {
+    'height': '700px',
+    'autoplayInterval': 4000
+})|raw }}
+```
+
+### Blade Integration (Laravel)
+
+See [INTEGRATION_BLADE.md](DOCUMENTATION/INTEGRATION_BLADE.md) for complete documentation.
+
+```blade
+{{-- Directives --}}
+@carousel_infinite('products', $images)
+@carousel_hero('banner', $banners, ['height' => '700px'])
+
+{{-- Helpers --}}
+{!! carousel_infinite('products', $images)->render() !!}
+```
+
 ## 🧪 Tests
 
 ```bash
 composer test
 ```
+
+**Test Coverage:**
+- ✅ 60 tests, 200 assertions
+- ✅ Security tests (XSS prevention, URL validation, input sanitization)
+- ✅ Accessibility tests (ARIA attributes, screen readers, prefers-reduced-motion)
+- ✅ Integration tests (Twig, Blade)
+- ✅ Functional tests (all carousel types and methods)
+
+## 📚 Additional Documentation
+
+- **[API Reference](docs/API.md)** - Complete API documentation
+- **[Twig Integration](DOCUMENTATION/INTEGRATION_TWIG.md)** - Twig extension guide
+- **[Blade Integration](DOCUMENTATION/INTEGRATION_BLADE.md)** - Laravel Blade guide
+- **[Usage Examples](DOCUMENTATION/EXEMPLES_UTILISATION.md)** - More examples
 
 ## 📝 License
 
