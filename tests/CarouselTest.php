@@ -121,5 +121,74 @@ class CarouselTest extends TestCase
         $this->assertEquals('test', $array['id']);
         $this->assertEquals('Title', $array['title']);
     }
+
+    public function testCreateInfiniteCarousel(): void
+    {
+        $carousel = Carousel::infiniteCarousel('infinite', [
+            'image1.jpg',
+            'image2.jpg',
+            'image3.jpg',
+        ]);
+
+        $this->assertEquals('infinite', $carousel->getId());
+        $this->assertEquals(Carousel::TYPE_INFINITE, $carousel->getType());
+        $this->assertCount(3, $carousel->getItems());
+        $this->assertTrue($carousel->getOption('autoplay'));
+        $this->assertFalse($carousel->getOption('showDots'));
+        $this->assertEquals(3, $carousel->getOption('itemsPerSlide'));
+    }
+
+    public function testCreateHeroBanner(): void
+    {
+        $carousel = Carousel::heroBanner('hero', [
+            [
+                'id' => 'banner1',
+                'title' => 'Banner 1',
+                'image' => 'banner1.jpg',
+            ],
+        ]);
+
+        $this->assertEquals('hero', $carousel->getId());
+        $this->assertEquals(Carousel::TYPE_IMAGE, $carousel->getType());
+        $this->assertEquals('600px', $carousel->getOption('height'));
+        $this->assertEquals('fade', $carousel->getOption('transition'));
+        $this->assertTrue($carousel->getOption('showDots'));
+    }
+
+    public function testCreateProductShowcase(): void
+    {
+        $carousel = Carousel::productShowcase('products', [
+            [
+                'id' => '1',
+                'title' => 'Product 1',
+                'image' => 'product1.jpg',
+            ],
+        ]);
+
+        $this->assertEquals('products', $carousel->getId());
+        $this->assertEquals(Carousel::TYPE_CARD, $carousel->getType());
+        $this->assertEquals(4, $carousel->getOption('itemsPerSlide'));
+        $this->assertFalse($carousel->getOption('autoplay'));
+        $this->assertFalse($carousel->getOption('showDots'));
+        $this->assertEquals(20, $carousel->getOption('gap'));
+    }
+
+    public function testCreateTestimonialSlider(): void
+    {
+        $carousel = Carousel::testimonialSlider('testimonials', [
+            [
+                'id' => '1',
+                'title' => 'John Doe',
+                'content' => 'Great product!',
+            ],
+        ]);
+
+        $this->assertEquals('testimonials', $carousel->getId());
+        $this->assertEquals(Carousel::TYPE_TESTIMONIAL, $carousel->getType());
+        $this->assertEquals('fade', $carousel->getOption('transition'));
+        $this->assertTrue($carousel->getOption('showDots'));
+        $this->assertFalse($carousel->getOption('showArrows'));
+        $this->assertEquals(6000, $carousel->getOption('autoplayInterval'));
+    }
 }
 

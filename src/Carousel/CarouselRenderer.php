@@ -138,6 +138,10 @@ class CarouselRenderer
             case Carousel::TYPE_GALLERY:
                 $html .= $this->renderGalleryItem($item, $index);
                 break;
+            case Carousel::TYPE_INFINITE:
+                // Infinite carousel uses image rendering
+                $html .= $this->renderImageItem($item, $index);
+                break;
             default:
                 $html .= $this->renderSimpleItem($item);
         }
@@ -337,6 +341,10 @@ class CarouselRenderer
                 break;
             case Carousel::TYPE_GALLERY:
                 $css .= $this->getGalleryCss($cssId);
+                break;
+            case Carousel::TYPE_INFINITE:
+                // Infinite carousel uses card CSS with multiple items
+                $css .= $this->getCardCss($cssId, $options);
                 break;
         }
         
