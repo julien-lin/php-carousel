@@ -26,7 +26,7 @@ class Carousel
     private string $type;
     private array $items = [];
     private array $options = [];
-    private ?CarouselRenderer $renderer = null;
+    private ?\JulienLinard\Carousel\Renderer\CompositeRenderer $renderer = null;
 
     public function __construct(
         string $id,
@@ -108,10 +108,10 @@ class Carousel
     /**
      * Get or create the renderer instance
      */
-    private function getRenderer(): CarouselRenderer
+    private function getRenderer(): \JulienLinard\Carousel\Renderer\CompositeRenderer
     {
         if ($this->renderer === null) {
-            $this->renderer = new CarouselRenderer($this);
+            $this->renderer = new \JulienLinard\Carousel\Renderer\CompositeRenderer();
         }
         return $this->renderer;
     }
@@ -121,7 +121,7 @@ class Carousel
      */
     public function render(): string
     {
-        return $this->getRenderer()->render();
+        return $this->getRenderer()->render($this);
     }
 
     /**
@@ -129,7 +129,7 @@ class Carousel
      */
     public function renderHtml(): string
     {
-        return $this->getRenderer()->renderHtml();
+        return $this->getRenderer()->getHtmlRenderer()->render($this);
     }
 
     /**
@@ -137,7 +137,7 @@ class Carousel
      */
     public function renderCss(): string
     {
-        return $this->getRenderer()->renderCss();
+        return $this->getRenderer()->getCssRenderer()->render($this);
     }
 
     /**
@@ -145,7 +145,7 @@ class Carousel
      */
     public function renderJs(): string
     {
-        return $this->getRenderer()->renderJs();
+        return $this->getRenderer()->getJsRenderer()->render($this);
     }
 
     /**

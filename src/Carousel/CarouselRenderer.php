@@ -15,6 +15,7 @@ use JulienLinard\Carousel\Translator\ArrayTranslator;
 use JulienLinard\Carousel\Validator\UrlValidator;
 
 /**
+ * @deprecated Since 3.0.0, use CompositeRenderer, HtmlRenderer, CssRenderer, JsRenderer instead
  * Renders carousel HTML, CSS and JavaScript
  */
 class CarouselRenderer

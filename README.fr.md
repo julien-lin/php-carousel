@@ -149,7 +149,7 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 - ✅ **Personnalisable** - Options de configuration étendues
 - ✅ **Conforme WCAG 2.1 AA** - Support complet de l'accessibilité (ARIA, lecteurs d'écran, prefers-reduced-motion)
 - ✅ **Sécurité** - Prévention XSS, validation d'URL, sanitization des entrées
-- ✅ **Performance** - Renderer Singleton, JavaScript optimisé, minification CSS/JS
+- ✅ **Performance** - Architecture de renderers modulaire, JavaScript optimisé, minification CSS/JS
 - ✅ **Gestion d'Erreurs** - Placeholders pour images en erreur, indicateurs de chargement
 
 ## 📖 Documentation

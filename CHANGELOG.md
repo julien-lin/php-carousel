@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2024-12-XX
+
+### Added
+- **Modular Renderer Architecture:**
+  - `CompositeRenderer` - Combines HTML, CSS, and JS renderers
+  - `HtmlRenderer` - Renders only HTML structure
+  - `CssRenderer` - Renders only CSS styles
+  - `JsRenderer` - Renders only JavaScript code
+  - `RenderCacheService` - Centralized caching service
+  - `RenderContext` - Context sharing between renderers
+  - `AbstractRenderer` - Base class for all renderers
+
+### Changed
+- **Renderer Architecture Migration:**
+  - Migrated from monolithic `CarouselRenderer` to modular architecture
+  - `Carousel` class now uses `CompositeRenderer` internally
+  - Improved separation of concerns (HTML, CSS, JS)
+  - Better testability with independent renderers
+  - Enhanced maintainability and extensibility
+
+- **Deprecated:**
+  - `CarouselRenderer` class is now deprecated (marked with `@deprecated`)
+  - Kept only for backward compatibility in migration tests
+  - Should not be used in new code
+
+### Performance
+- Optimized caching per renderer type
+- Improved code organization and maintainability
+- Better separation of concerns
+
+### Testing
+- Added migration tests to verify identical output (26 tests)
+- All 206 tests passing with 523 assertions
+- Complete test coverage for new renderer architecture
+
 ## [2.0.0] - 2024-12-XX
 
 ### Added
@@ -38,7 +73,7 @@ All notable changes to this project will be documented in this file.
   - Attribute sanitization (only safe attributes allowed)
 
 - **Performance Optimizations:**
-  - Singleton pattern for renderer
+  - Modular renderer architecture (replaced singleton pattern in 3.0.0)
   - Real lazy loading with Intersection Observer
   - JavaScript optimization (requestAnimationFrame, cleanup)
   - CSS/JS minification support
