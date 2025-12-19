@@ -16,7 +16,23 @@ Une librairie de carrousels moderne et performante pour PHP avec des designs él
 composer require julienlinard/php-carousel
 ```
 
-**Requirements** : PHP 8.0 ou supérieur
+**Requirements** : PHP 8.2 ou supérieur
+
+### Dépendances Optionnelles
+
+La librairie core n'a **aucune dépendance externe**. Cependant, si vous souhaitez utiliser les intégrations Twig ou Blade, vous devez installer les packages correspondants :
+
+**Pour l'intégration Twig :**
+```bash
+composer require twig/twig
+```
+
+**Pour l'intégration Blade (Laravel) :**
+```bash
+composer require illuminate/support
+```
+
+> **Note** : Ces dépendances sont optionnelles. La fonctionnalité core du carousel fonctionne sans elles. Elles sont uniquement nécessaires si vous utilisez les extensions Twig ou Blade.
 
 ## ⚡ Démarrage rapide
 
@@ -121,15 +137,20 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 ## 📋 Fonctionnalités
 
 - ✅ **Zéro Dépendance** - Implémentation CSS/JS native pure
-- ✅ **Types Multiples** - Carrousels Image, Carte, Témoignage, Galerie
+- ✅ **Types Multiples** - Carrousels Image, Carte, Témoignage, Galerie, Infini
+- ✅ **Méthodes Factory Statiques** - `infiniteCarousel()`, `heroBanner()`, `productShowcase()`, `testimonialSlider()`
+- ✅ **Intégration Twig & Blade** - Extensions prêtes à l'emploi pour les moteurs de templates populaires
 - ✅ **Entièrement Responsive** - Optimisé mobile, tablette et desktop
 - ✅ **Swipe Tactile** - Support des gestes tactiles natifs
 - ✅ **Navigation Clavier** - Contrôles clavier accessibles
 - ✅ **Lecture Automatique** - Autoplay configurable avec pause au survol
 - ✅ **Animations Fluides** - Transitions et transformations CSS
-- ✅ **Chargement Différé** - Lazy loading d'images intégré
+- ✅ **Chargement Différé** - Lazy loading d'images intégré avec Intersection Observer
 - ✅ **Personnalisable** - Options de configuration étendues
-- ✅ **Accessible** - Labels ARIA et HTML sémantique
+- ✅ **Conforme WCAG 2.1 AA** - Support complet de l'accessibilité (ARIA, lecteurs d'écran, prefers-reduced-motion)
+- ✅ **Sécurité** - Prévention XSS, validation d'URL, sanitization des entrées
+- ✅ **Performance** - Renderer Singleton, JavaScript optimisé, minification CSS/JS
+- ✅ **Gestion d'Erreurs** - Placeholders pour images en erreur, indicateurs de chargement
 
 ## 📖 Documentation
 
@@ -309,10 +330,14 @@ Vous pouvez surcharger les styles en utilisant CSS :
 
 #### Méthodes Factory Statiques
 
-- `Carousel::image(string $id, array $images, array $options = []): self`
-- `Carousel::card(string $id, array $cards, array $options = []): self`
-- `Carousel::testimonial(string $id, array $testimonials, array $options = []): self`
-- `Carousel::gallery(string $id, array $images, array $options = []): self`
+- `Carousel::image(string $id, array $images, array $options = []): self` - Carousel d'images
+- `Carousel::card(string $id, array $cards, array $options = []): self` - Carousel de cartes
+- `Carousel::testimonial(string $id, array $testimonials, array $options = []): self` - Carousel de témoignages
+- `Carousel::gallery(string $id, array $images, array $options = []): self` - Carousel galerie
+- `Carousel::infiniteCarousel(string $id, array $images, array $options = []): self` - Carousel infini
+- `Carousel::heroBanner(string $id, array $banners, array $options = []): self` - Bannière hero
+- `Carousel::productShowcase(string $id, array $products, array $options = []): self` - Showcase produits
+- `Carousel::testimonialSlider(string $id, array $testimonials, array $options = []): self` - Slider témoignages
 
 #### Méthodes d'Instance
 
@@ -457,11 +482,55 @@ $carousel = Carousel::testimonial('temoignages', $temoignages, [
 echo $carousel->render();
 ```
 
+## 🔌 Intégrations
+
+### Intégration Twig
+
+Voir [INTEGRATION_TWIG.md](DOCUMENTATION/INTEGRATION_TWIG.md) pour la documentation complète.
+
+```twig
+{# Utilisation simple #}
+{{ carousel_infinite('products', images)|raw }}
+
+{# Avec options #}
+{{ carousel_hero('banner', banners, {
+    'height': '700px',
+    'autoplayInterval': 4000
+})|raw }}
+```
+
+### Intégration Blade (Laravel)
+
+Voir [INTEGRATION_BLADE.md](DOCUMENTATION/INTEGRATION_BLADE.md) pour la documentation complète.
+
+```blade
+{{-- Directives --}}
+@carousel_infinite('products', $images)
+@carousel_hero('banner', $banners, ['height' => '700px'])
+
+{{-- Helpers --}}
+{!! carousel_infinite('products', $images)->render() !!}
+```
+
 ## 🧪 Tests
 
 ```bash
 composer test
 ```
+
+**Couverture des Tests :**
+- ✅ 60 tests, 200 assertions
+- ✅ Tests de sécurité (prévention XSS, validation URL, sanitization)
+- ✅ Tests d'accessibilité (attributs ARIA, lecteurs d'écran, prefers-reduced-motion)
+- ✅ Tests d'intégration (Twig, Blade)
+- ✅ Tests fonctionnels (tous les types de carrousels et méthodes)
+
+## 📚 Documentation Additionnelle
+
+- **[Référence API](docs/API.md)** - Documentation API complète
+- **[Intégration Twig](DOCUMENTATION/INTEGRATION_TWIG.md)** - Guide d'extension Twig
+- **[Intégration Blade](DOCUMENTATION/INTEGRATION_BLADE.md)** - Guide Laravel Blade
+- **[Exemples d'Utilisation](DOCUMENTATION/EXEMPLES_UTILISATION.md)** - Plus d'exemples
 
 ## 📝 License
 
