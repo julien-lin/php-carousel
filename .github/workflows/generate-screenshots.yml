@@ -101,5 +101,3 @@ jobs:
             echo "No screenshot file generated"
             exit 0
           fi
-
-# Force workflow trigger
