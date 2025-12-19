@@ -16,7 +16,23 @@ A modern and performant carousel library for PHP with beautiful designs. Pure CS
 composer require julienlinard/php-carousel
 ```
 
-**Requirements**: PHP 8.0 or higher
+**Requirements**: PHP 8.2 or higher
+
+### Optional Dependencies
+
+The core library has **zero external dependencies**. However, if you want to use Twig or Blade integrations, you need to install the corresponding packages:
+
+**For Twig integration:**
+```bash
+composer require twig/twig
+```
+
+**For Blade integration (Laravel):**
+```bash
+composer require illuminate/support
+```
+
+> **Note**: These dependencies are optional. The core carousel functionality works without them. They are only needed if you use the Twig or Blade extensions.
 
 ## ⚡ Quick Start
 
