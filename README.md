@@ -486,7 +486,7 @@ echo $carousel->render();
 
 ### Twig Integration
 
-See [INTEGRATION_TWIG.md](DOCUMENTATION/INTEGRATION_TWIG.md) for complete documentation.
+See [INTEGRATION_TWIG.md](docs/INTEGRATION_TWIG.md) for complete documentation.
 
 ```twig
 {# Simple usage #}
@@ -501,7 +501,7 @@ See [INTEGRATION_TWIG.md](DOCUMENTATION/INTEGRATION_TWIG.md) for complete docume
 
 ### Blade Integration (Laravel)
 
-See [INTEGRATION_BLADE.md](DOCUMENTATION/INTEGRATION_BLADE.md) for complete documentation.
+See [INTEGRATION_BLADE.md](docs/INTEGRATION_BLADE.md) for complete documentation.
 
 ```blade
 {{-- Directives --}}
@@ -528,9 +528,9 @@ composer test
 ## 📚 Additional Documentation
 
 - **[API Reference](docs/API.md)** - Complete API documentation
-- **[Twig Integration](DOCUMENTATION/INTEGRATION_TWIG.md)** - Twig extension guide
-- **[Blade Integration](DOCUMENTATION/INTEGRATION_BLADE.md)** - Laravel Blade guide
-- **[Usage Examples](DOCUMENTATION/EXEMPLES_UTILISATION.md)** - More examples
+- **[Twig Integration](docs/INTEGRATION_TWIG.md)** - Twig extension guide
+- **[Blade Integration](docs/INTEGRATION_BLADE.md)** - Laravel Blade guide
+- **[Usage Examples](docs/EXEMPLES_UTILISATION.md)** - More examples
 
 ## 📝 License
 
