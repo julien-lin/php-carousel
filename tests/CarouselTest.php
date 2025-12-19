@@ -84,11 +84,13 @@ class CarouselTest extends TestCase
 
     public function testRenderCarousel(): void
     {
-        $carousel = Carousel::image('test', ['image1.jpg']);
+        // Use unique ID to avoid cache issues between tests
+        $uniqueId = 'test-render-' . uniqid();
+        $carousel = Carousel::image($uniqueId, ['image1.jpg']);
         $output = $carousel->render();
 
         $this->assertStringContainsString('carousel-container', $output);
-        $this->assertStringContainsString('carousel-test', $output);
+        $this->assertStringContainsString('carousel-' . $uniqueId, $output);
         $this->assertStringContainsString('<style', $output);
         $this->assertStringContainsString('<script', $output);
     }
