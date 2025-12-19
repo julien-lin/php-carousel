@@ -20,6 +20,7 @@ class Carousel
     public const TYPE_TESTIMONIAL = 'testimonial';
     public const TYPE_GALLERY = 'gallery';
     public const TYPE_SIMPLE = 'simple';
+    public const TYPE_INFINITE = 'infinite';
 
     private string $id;
     private string $type;
@@ -42,6 +43,7 @@ class Carousel
             self::TYPE_TESTIMONIAL,
             self::TYPE_GALLERY,
             self::TYPE_SIMPLE,
+            self::TYPE_INFINITE,
         ];
         
         if (!in_array($type, $validTypes, true)) {
@@ -278,6 +280,109 @@ class Carousel
         }
         
         return $carousel;
+    }
+
+    /**
+     * Create an infinite scrolling carousel
+     * 
+     * @param string $id Unique carousel identifier
+     * @param array $images Array of image URLs or CarouselItem arrays
+     * @param array $options Carousel options
+     * @return self
+     */
+    public static function infiniteCarousel(string $id, array $images, array $options = []): self
+    {
+        $carousel = new self($id, self::TYPE_INFINITE, array_merge([
+            'loop' => true,
+            'autoplay' => true,
+            'autoplayInterval' => 3000,
+            'transition' => 'slide',
+            'showDots' => false,
+            'itemsPerSlide' => 3,
+            'itemsPerSlideDesktop' => 4,
+            'itemsPerSlideTablet' => 3,
+            'itemsPerSlideMobile' => 2,
+        ], $options));
+        
+        foreach ($images as $image) {
+            if (is_string($image)) {
+                $carousel->addItem([
+                    'id' => uniqid('inf_'),
+                    'image' => $image,
+                ]);
+            } else {
+                $carousel->addItem($image);
+            }
+        }
+        
+        return $carousel;
+    }
+
+    /**
+     * Create a hero banner carousel (full-width, large images)
+     * 
+     * @param string $id Unique carousel identifier
+     * @param array $banners Array of banner data
+     * @param array $options Carousel options
+     * @return self
+     */
+    public static function heroBanner(string $id, array $banners, array $options = []): self
+    {
+        $carousel = new self($id, self::TYPE_IMAGE, array_merge([
+            'height' => '600px',
+            'autoplay' => true,
+            'autoplayInterval' => 5000,
+            'transition' => 'fade',
+            'showDots' => true,
+            'showArrows' => true,
+            'itemsPerSlide' => 1,
+        ], $options));
+        
+        $carousel->addItems($banners);
+        return $carousel;
+    }
+
+    /**
+     * Create a product showcase carousel
+     * 
+     * @param string $id Unique carousel identifier
+     * @param array $products Array of product data
+     * @param array $options Carousel options
+     * @return self
+     */
+    public static function productShowcase(string $id, array $products, array $options = []): self
+    {
+        $carousel = new self($id, self::TYPE_CARD, array_merge([
+            'itemsPerSlide' => 4,
+            'itemsPerSlideDesktop' => 4,
+            'itemsPerSlideTablet' => 3,
+            'itemsPerSlideMobile' => 2,
+            'gap' => 20,
+            'autoplay' => false,
+            'showArrows' => true,
+            'showDots' => false,
+        ], $options));
+        
+        $carousel->addItems($products);
+        return $carousel;
+    }
+
+    /**
+     * Create a testimonial slider (alias for testimonial with optimized defaults)
+     * 
+     * @param string $id Unique carousel identifier
+     * @param array $testimonials Array of testimonial data
+     * @param array $options Carousel options
+     * @return self
+     */
+    public static function testimonialSlider(string $id, array $testimonials, array $options = []): self
+    {
+        return self::testimonial($id, $testimonials, array_merge([
+            'transition' => 'fade',
+            'autoplayInterval' => 6000,
+            'showDots' => true,
+            'showArrows' => false,
+        ], $options));
     }
 }
 

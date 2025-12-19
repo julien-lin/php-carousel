@@ -24,32 +24,80 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction
       
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
       - name: Setup demo server
         run: |
-          php -S localhost:8000 -t . example.php &
+          php -S localhost:8000 -t . > /dev/null 2>&1 &
           sleep 5
+          curl -f http://localhost:8000/example.php || (echo "Server failed to start" && exit 1)
       
       - name: Install Playwright
         run: |
-          npm install -g playwright
-          npx playwright install chromium
+          npm install -g playwright@latest
+          npx playwright install chromium --with-deps || npx playwright install chromium
       
       - name: Generate screenshots
         run: |
           # Create screenshots directory
           mkdir -p docs/images
           
-          # Use Playwright to capture screenshots
-          # Note: This is a template - you'll need to create a script
-          # that navigates to your demo page and captures each carousel
-          echo "Screenshot generation script would go here"
+          # Create a simple Node.js script to generate screenshots
+          cat > generate-screenshots.js << 'EOF'
+          const { chromium } = require('playwright');
+          
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            await page.setViewportSize({ width: 1200, height: 800 });
+            
+            try {
+              await page.goto('http://localhost:8000/example.php', { 
+                waitUntil: 'networkidle',
+                timeout: 30000 
+              });
+              
+              // Wait for carousels to load
+              await page.waitForTimeout(3000);
+              
+              // Take screenshot of the full page
+              await page.screenshot({ 
+                path: 'docs/images/carousel-demo.png', 
+                fullPage: true 
+              });
+              
+              console.log('Screenshot generated successfully');
+            } catch (error) {
+              console.error('Error generating screenshot:', error);
+              // Take a screenshot of the error page for debugging
+              try {
+                await page.screenshot({ path: 'docs/images/error.png', fullPage: true });
+              } catch (e) {
+                console.error('Could not capture error screenshot:', e);
+              }
+              process.exit(1);
+            } finally {
+              await browser.close();
+            }
+          })();
+          EOF
+          
+          node generate-screenshots.js
       
       - name: Commit screenshots
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add docs/images/*.png
-          git commit -m "docs: Update carousel screenshots" || exit 0
-          git push
+          if [ -f docs/images/carousel-demo.png ]; then
+            git add docs/images/carousel-demo.png
+            git diff --staged --quiet || git commit -m "docs: Update carousel screenshots [skip ci]"
+            git push || echo "Nothing to push"
+          else
+            echo "No screenshot file generated"
+            exit 0
+          fi
 
