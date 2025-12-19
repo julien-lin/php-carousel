@@ -1,5 +1,6 @@
 name: Generate Screenshots
 
+# Workflow to generate screenshots for Packagist
 on:
   workflow_dispatch:
   push:
