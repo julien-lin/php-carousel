@@ -348,6 +348,44 @@ $carousel = Carousel::gallery('galerie-photos', $beaucoupPhotos, [
 ]);
 ```
 
+#### Transitions et Animations Personnalisées
+
+```php
+// Transition personnalisée
+$carousel = Carousel::image('custom', $images, [
+    'customTransition' => [
+        'duration' => 600,
+        'timingFunction' => 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'properties' => ['transform', 'opacity'],
+    ],
+]);
+
+// Animations personnalisées (simples)
+$carousel = Carousel::card('animated', $cartes, [
+    'animations' => [
+        'slideIn' => 'slideInFromRight 0.5s ease-out',
+        'slideOut' => 'slideOutToLeft 0.5s ease-in',
+    ],
+]);
+
+// Animations personnalisées (avec keyframes)
+$carousel = Carousel::image('keyframes', $images, [
+    'animations' => [
+        'fadeIn' => [
+            'keyframes' => [
+                'name' => 'carousel-fade-in',
+                'steps' => [
+                    '0%' => ['opacity' => '0'],
+                    '100%' => ['opacity' => '1'],
+                ],
+            ],
+            'duration' => '0.5s',
+            'timingFunction' => 'ease-out',
+        ],
+    ],
+]);
+```
+
 #### Plusieurs Carrousels sur la Même Page
 
 ```php

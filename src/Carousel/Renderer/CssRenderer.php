@@ -88,6 +88,10 @@ class CssRenderer extends AbstractRenderer
                 break;
         }
         
+        // Custom transitions and animations
+        $css .= $this->getCustomTransitionCss($cssId, $context);
+        $css .= $this->getCustomAnimationsCss($cssId, $context);
+        
         // Responsive styles
         if ($options['responsive'] ?? true) {
             $css .= $this->getResponsiveCss($cssId, $context);
@@ -718,6 +722,115 @@ CSS;
 }
 
 CSS;
+    }
+
+    /**
+     * Get custom transition CSS
+     * 
+     * @param string $cssId CSS selector ID
+     * @param RenderContext $context Render context
+     * @return string CSS output
+     */
+    private function getCustomTransitionCss(string $cssId, RenderContext $context): string
+    {
+        $options = $context->getOptions();
+        $customTransition = $options['customTransition'] ?? null;
+        
+        if (!$customTransition || !is_array($customTransition)) {
+            return '';
+        }
+        
+        $duration = ($customTransition['duration'] ?? 500) . 'ms';
+        $timingFunction = $customTransition['timingFunction'] ?? 'cubic-bezier(0.4, 0, 0.2, 1)';
+        $properties = $customTransition['properties'] ?? ['transform'];
+        
+        $transitionValue = implode(', ', array_map(function($prop) use ($duration, $timingFunction) {
+            return "{$prop} {$duration} {$timingFunction}";
+        }, $properties));
+        
+        return <<<CSS
+{$cssId}[data-carousel-transition="custom"] .carousel-track {
+    transition: {$transitionValue};
+}
+
+{$cssId}[data-carousel-transition="custom"] .carousel-slide {
+    transition: {$transitionValue};
+}
+
+CSS;
+    }
+
+    /**
+     * Get custom animations CSS
+     * 
+     * @param string $cssId CSS selector ID
+     * @param RenderContext $context Render context
+     * @return string CSS output
+     */
+    private function getCustomAnimationsCss(string $cssId, RenderContext $context): string
+    {
+        $options = $context->getOptions();
+        $animations = $options['animations'] ?? [];
+        
+        if (empty($animations) || !is_array($animations)) {
+            return '';
+        }
+        
+        $css = '';
+        
+        // Generate CSS for each animation
+        foreach ($animations as $name => $value) {
+            // If value is a string (e.g., "slideInFromRight 0.5s ease-out")
+            if (is_string($value)) {
+                // Add animation class
+                $css .= "{$cssId} .carousel-animation-{$name} {\n";
+                $css .= "    animation: {$value};\n";
+                $css .= "}\n\n";
+            } elseif (is_array($value)) {
+                // If value is an array with keyframes definition
+                if (isset($value['keyframes'])) {
+                    // Generate @keyframes
+                    $keyframesName = $value['keyframes']['name'] ?? "carousel-{$name}";
+                    $keyframes = $value['keyframes']['steps'] ?? [];
+                    
+                    $css .= "@keyframes {$keyframesName} {\n";
+                    foreach ($keyframes as $step => $properties) {
+                        $stepPercent = is_numeric($step) ? "{$step}%" : $step;
+                        $css .= "    {$stepPercent} {\n";
+                        foreach ($properties as $prop => $val) {
+                            $css .= "        {$prop}: {$val};\n";
+                        }
+                        $css .= "    }\n";
+                    }
+                    $css .= "}\n\n";
+                    
+                    // Add animation class
+                    $duration = $value['duration'] ?? '0.5s';
+                    $timingFunction = $value['timingFunction'] ?? 'ease';
+                    $delay = isset($value['delay']) ? " {$value['delay']}" : '';
+                    $iterationCount = isset($value['iterationCount']) ? " {$value['iterationCount']}" : '';
+                    $direction = isset($value['direction']) ? " {$value['direction']}" : '';
+                    
+                    $css .= "{$cssId} .carousel-animation-{$name} {\n";
+                    $css .= "    animation: {$keyframesName} {$duration} {$timingFunction}{$delay}{$iterationCount}{$direction};\n";
+                    $css .= "}\n\n";
+                } else {
+                    // Simple animation definition
+                    $duration = $value['duration'] ?? '0.5s';
+                    $timingFunction = $value['timingFunction'] ?? 'ease';
+                    $delay = isset($value['delay']) ? " {$value['delay']}" : '';
+                    $iterationCount = isset($value['iterationCount']) ? " {$value['iterationCount']}" : '';
+                    $direction = isset($value['direction']) ? " {$value['direction']}" : '';
+                    $keyframesName = $value['name'] ?? "carousel-{$name}";
+                    
+                    $css .= "{$cssId} .carousel-animation-{$name} {\n";
+                    $css .= "    animation: {$keyframesName} {$duration} {$timingFunction}{$delay}{$iterationCount}{$direction};\n";
+                    $css .= "}\n\n";
+                }
+            }
+        }
+        
+        return $css;
     }
 
     /**

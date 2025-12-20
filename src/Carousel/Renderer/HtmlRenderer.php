@@ -50,6 +50,10 @@ class HtmlRenderer extends AbstractRenderer
         }
         
         $transition = $options['transition'] ?? 'slide';
+        // If customTransition is defined, use 'custom' transition
+        if (isset($options['customTransition']) && is_array($options['customTransition'])) {
+            $transition = 'custom';
+        }
         $theme = $options['theme'] ?? 'auto';
         $hasCustomColors = isset($options['themeColors']) && is_array($options['themeColors']);
         // Only add data-theme attribute if theme is explicitly set (not default 'auto') or custom colors provided
