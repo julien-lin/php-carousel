@@ -157,6 +157,13 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 
 ## 📖 Documentation
 
+- [Référence API](docs/API.md) - Documentation API complète
+- [Intégration CMS](docs/INTEGRATION_CMS.md) - WordPress, PrestaShop, Drupal
+- [Intégration Twig](docs/INTEGRATION_TWIG.md) - Moteur de template Twig
+- [Intégration Blade](docs/INTEGRATION_BLADE.md) - Template Laravel Blade
+- [Intégration React](docs/INTEGRATION_REACT.md) - Intégration React.js
+- [Intégration Vue](docs/INTEGRATION_VUE.md) - Intégration Vue.js
+
 ### Types de Carrousels
 
 #### Carousel d'Images

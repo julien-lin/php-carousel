@@ -157,6 +157,13 @@ Advanced gallery with thumbnail navigation for easy browsing.
 
 ## 📖 Documentation
 
+- [API Reference](docs/API.md) - Complete API documentation
+- [CMS Integration](docs/INTEGRATION_CMS.md) - WordPress, PrestaShop, Drupal
+- [Twig Integration](docs/INTEGRATION_TWIG.md) - Twig templating engine
+- [Blade Integration](docs/INTEGRATION_BLADE.md) - Laravel Blade templating
+- [React Integration](docs/INTEGRATION_REACT.md) - React.js integration
+- [Vue Integration](docs/INTEGRATION_VUE.md) - Vue.js integration
+
 ### Carousel Types
 
 #### Image Carousel

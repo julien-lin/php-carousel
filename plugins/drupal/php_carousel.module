@@ -1,0 +1,168 @@
+<?php
+
+/**
+ * @file
+ * Drupal module for PHP Carousel integration.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
+
+/**
+ * Implements hook_help().
+ */
+function php_carousel_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+    switch ($route_name) {
+        case 'help.page.php_carousel':
+            $output = '';
+            $output .= '<h3>' . t('About') . '</h3>';
+            $output .= '<p>' . t('PHP Carousel integration for Drupal. Provides blocks and filters for displaying carousels.') . '</p>';
+            return $output;
+
+        default:
+    }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function php_carousel_block_info() {
+    $blocks = [];
+
+    $blocks['php_carousel'] = [
+        'info' => t('PHP Carousel'),
+        'cache' => DRUPAL_CACHE_PER_PAGE,
+    ];
+
+    return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function php_carousel_block_view($delta = '') {
+    $block = [];
+
+    switch ($delta) {
+        case 'php_carousel':
+            $block['subject'] = t('Carousel');
+            $block['content'] = [
+                '#markup' => php_carousel_render_carousel(),
+            ];
+            break;
+    }
+
+    return $block;
+}
+
+/**
+ * Render a carousel
+ * 
+ * @param array $config Configuration array
+ * @return string Rendered carousel HTML
+ */
+function php_carousel_render_carousel(array $config = []) {
+    // Check if PHP Carousel library is available
+    if (!class_exists('JulienLinard\Carousel\Carousel')) {
+        // Try to autoload if composer is used
+        $autoload_path = drupal_get_path('module', 'php_carousel') . '/../../vendor/autoload.php';
+        if (file_exists($autoload_path)) {
+            require_once $autoload_path;
+        } else {
+            return '<p>' . t('PHP Carousel library not found. Please install it via Composer.') . '</p>';
+        }
+    }
+
+    try {
+        $id = $config['id'] ?? 'drupal-carousel-' . uniqid();
+        $type = $config['type'] ?? 'image';
+        $items = $config['items'] ?? [];
+        $options = $config['options'] ?? [];
+
+        if (empty($items)) {
+            return '<p>' . t('No items provided for carousel.') . '</p>';
+        }
+
+        // Create carousel based on type
+        $carousel = match($type) {
+            'image' => Carousel::image($id, $items, $options),
+            'card' => Carousel::card($id, $items, $options),
+            'testimonial' => Carousel::testimonial($id, $items, $options),
+            'gallery' => Carousel::gallery($id, $items, $options),
+            'infinite' => Carousel::infiniteCarousel($id, $items, $options),
+            default => Carousel::image($id, $items, $options),
+        };
+
+        return $carousel->render();
+    } catch (\Exception $e) {
+        if (\Drupal::currentUser()->hasPermission('administer site configuration')) {
+            return '<p class="error">' . htmlspecialchars($e->getMessage()) . '</p>';
+        }
+        return '';
+    }
+}
+
+/**
+ * Implements hook_filter_info().
+ */
+function php_carousel_filter_info() {
+    $filters = [];
+
+    $filters['php_carousel'] = [
+        'title' => t('PHP Carousel'),
+        'description' => t('Renders PHP Carousel shortcode syntax.'),
+        'process callback' => 'php_carousel_filter_process',
+        'tips callback' => 'php_carousel_filter_tips',
+    ];
+
+    return $filters;
+}
+
+/**
+ * Filter process callback
+ */
+function php_carousel_filter_process($text, $filter, $format, $langcode, $cache, $cache_id) {
+    // Pattern: [php_carousel id="..." type="..." images="..."]
+    $pattern = '/\[php_carousel\s+([^\]]+)\]/';
+    
+    return preg_replace_callback($pattern, function($matches) {
+        $attrs = [];
+        // Parse attributes
+        preg_match_all('/(\w+)="([^"]+)"/', $matches[1], $attrMatches, PREG_SET_ORDER);
+        foreach ($attrMatches as $attr) {
+            $attrs[$attr[1]] = $attr[2];
+        }
+
+        $config = [
+            'id' => $attrs['id'] ?? 'drupal-carousel-' . uniqid(),
+            'type' => $attrs['type'] ?? 'image',
+            'items' => [],
+            'options' => [],
+        ];
+
+        // Parse images
+        if (!empty($attrs['images'])) {
+            $images = explode(',', $attrs['images']);
+            $config['items'] = array_map(function($img) {
+                return ['image' => trim($img)];
+            }, $images);
+        }
+
+        // Parse options
+        foreach (['autoplay', 'loop', 'show_arrows', 'show_dots'] as $option) {
+            if (isset($attrs[$option])) {
+                $config['options'][$option] = filter_var($attrs[$option], FILTER_VALIDATE_BOOLEAN);
+            }
+        }
+
+        return php_carousel_render_carousel($config);
+    }, $text);
+}
+
+/**
+ * Filter tips callback
+ */
+function php_carousel_filter_tips($filter, $format, $long = FALSE) {
+    return t('Use [php_carousel id="..." type="image" images="img1.jpg,img2.jpg"] to display a carousel.');
+}
+

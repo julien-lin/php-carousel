@@ -1,0 +1,7 @@
+name: PHP Carousel
+type: module
+description: 'Integration of PHP Carousel library for Drupal'
+core_version_requirement: ^9 || ^10 || ^11
+package: Media
+version: 1.0.0
+
