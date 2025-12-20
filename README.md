@@ -149,7 +149,9 @@ Advanced gallery with thumbnail navigation for easy browsing.
 - ✅ **Customizable** - Extensive configuration options
 - ✅ **WCAG 2.1 AA Compliant** - Full accessibility support (ARIA, screen readers, prefers-reduced-motion)
 - ✅ **Security** - XSS prevention, URL validation, input sanitization
-- ✅ **Performance** - Modular renderer architecture, optimized JavaScript, CSS/JS minification
+- ✅ **Performance** - Modular renderer architecture, optimized JavaScript, CSS/JS minification, virtualization for large carousels
+- ✅ **Themes** - Dark/Light mode support with automatic system preference detection
+- ✅ **Virtualization** - Automatic performance optimization for carousels with 50+ items
 - ✅ **Error Handling** - Image error placeholders, loading indicators
 
 ## 📖 Documentation
@@ -293,6 +295,57 @@ echo $carousel->renderCss();
 
 // Render only JavaScript (before </body>)
 echo $carousel->renderJs();
+```
+
+#### Dark/Light Theme Support
+
+```php
+// Auto theme (respects system preference)
+$carousel = Carousel::image('gallery', $images, [
+    'theme' => 'auto', // Automatically switches based on prefers-color-scheme
+]);
+
+// Light theme
+$carousel = Carousel::card('products', $products, [
+    'theme' => 'light',
+]);
+
+// Dark theme
+$carousel = Carousel::image('hero', $banners, [
+    'theme' => 'dark',
+]);
+
+// Custom theme colors
+$carousel = Carousel::card('custom', $items, [
+    'theme' => 'light',
+    'themeColors' => [
+        'light' => [
+            'background' => '#ffffff',
+            'text' => '#000000',
+            'cardBackground' => '#f5f5f5',
+        ],
+        'dark' => [
+            'background' => '#1a1a1a',
+            'text' => '#ffffff',
+            'cardBackground' => '#2a2a2a',
+        ],
+    ],
+]);
+```
+
+#### Virtualization for Large Carousels
+
+```php
+// Enable virtualization for performance with many items
+$carousel = Carousel::image('large-gallery', $manyImages, [
+    'virtualization' => true,
+    'virtualizationBuffer' => 5, // Show 5 slides on each side
+]);
+
+// Auto-enable when items exceed threshold (default: 50)
+$carousel = Carousel::gallery('photo-gallery', $manyPhotos, [
+    'virtualizationThreshold' => 30, // Enable at 30 items instead of 50
+]);
 ```
 
 #### Multiple Carousels on Same Page

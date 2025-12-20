@@ -207,6 +207,9 @@ class Carousel
             'lazyLoad' => true,
             'keyboardNavigation' => true,
             'touchSwipe' => true,
+            'virtualization' => false, // Enable virtualization for large carousels (50+ items)
+            'virtualizationThreshold' => 50, // Minimum items to enable virtualization
+            'virtualizationBuffer' => 3, // Number of slides to keep visible on each side
         ];
     }
 

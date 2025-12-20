@@ -105,6 +105,11 @@ class JsRenderer extends AbstractRenderer
         $keyboardNav = $options['keyboardNavigation'] ?? true ? 'true' : 'false';
         $touchSwipe = $options['touchSwipe'] ?? true ? 'true' : 'false';
         
+        // Virtualization settings
+        $virtualizationEnabled = ($options['virtualization'] ?? false) ? 'true' : 'false';
+        $virtualizationThreshold = $options['virtualizationThreshold'] ?? 50;
+        $virtualizationBuffer = $options['virtualizationBuffer'] ?? 3;
+        
         // Get translations for JavaScript
         $translations = [
             'slide_of' => $this->translator->translate('slide_of', null, ['current' => '{current}', 'total' => '{total}']),
@@ -138,6 +143,9 @@ const loop = {$loop};
 const transition = "{$transition}";
 const keyboardNav = {$keyboardNav};
 const touchSwipe = {$touchSwipe};
+const virtualizationEnabled = {$virtualizationEnabled};
+const virtualizationThreshold = {$virtualizationThreshold};
+const virtualizationBuffer = {$virtualizationBuffer};
 
 // Store event handler references for cleanup
 const handlePrevClick = () => prevSlide();
@@ -176,6 +184,9 @@ let touchStartX = 0;
 let touchEndX = 0;
 
 function updateCarousel() {
+    // Determine if virtualization should be active
+    const shouldVirtualize = virtualizationEnabled || slides.length >= virtualizationThreshold;
+    
     slides.forEach((slide, index) => {
         const isActive = index === currentIndex;
         slide.classList.toggle('active', isActive);
@@ -184,6 +195,22 @@ function updateCarousel() {
             slide.setAttribute('aria-current', 'true');
         } else {
             slide.removeAttribute('aria-current');
+        }
+        
+        // Virtualization: hide slides that are too far from current index
+        if (shouldVirtualize) {
+            const distance = Math.abs(index - currentIndex);
+            if (distance > virtualizationBuffer) {
+                slide.style.display = 'none';
+                slide.setAttribute('data-virtualized', 'true');
+            } else {
+                slide.style.display = '';
+                slide.removeAttribute('data-virtualized');
+            }
+        } else {
+            // Ensure all slides are visible when virtualization is disabled
+            slide.style.display = '';
+            slide.removeAttribute('data-virtualized');
         }
     });
     
