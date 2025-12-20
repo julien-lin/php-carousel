@@ -152,6 +152,7 @@ Advanced gallery with thumbnail navigation for easy browsing.
 - ✅ **Performance** - Modular renderer architecture, optimized JavaScript, CSS/JS minification, virtualization for large carousels
 - ✅ **Themes** - Dark/Light mode support with automatic system preference detection
 - ✅ **Virtualization** - Automatic performance optimization for carousels with 50+ items
+- ✅ **Server-Side Rendering (SSR)** - Static HTML generation for SEO and CDN caching
 - ✅ **Error Handling** - Image error placeholders, loading indicators
 
 ## 📖 Documentation
@@ -404,6 +405,25 @@ $savedConfig = json_decode(file_get_contents('carousel-config.json'), true);
 $restoredCarousel = Carousel::fromConfig($savedConfig);
 ```
 
+#### Server-Side Rendering (SSR)
+
+```php
+// Generate static HTML (perfect for SSR, caching, CDN)
+$carousel = Carousel::image('gallery', $images);
+$staticHtml = $carousel->renderStatic();
+// This HTML can be cached, served via CDN, indexed by search engines
+
+// Add JavaScript for interactivity (progressive enhancement)
+$fullHtml = $carousel->hydrate($staticHtml);
+// Or load JavaScript asynchronously on the client side
+```
+
+**SSR Benefits:**
+- ✅ Perfect SEO (content in HTML)
+- ✅ Fast initial load (no JavaScript required)
+- ✅ CDN cacheable
+- ✅ Progressive enhancement (add JS when needed)
+
 #### Multiple Carousels on Same Page
 
 ```php
@@ -458,6 +478,8 @@ You can override styles using CSS:
 - `renderHtml(): string` - Render only HTML
 - `renderCss(): string` - Render only CSS
 - `renderJs(): string` - Render only JavaScript
+- `renderStatic(): string` - Render static HTML with CSS (SSR, no JS)
+- `hydrate(string $staticHtml): string` - Add JavaScript to static HTML
 - `getId(): string` - Get carousel ID
 - `getType(): string` - Get carousel type
 - `getItems(): array` - Get all items

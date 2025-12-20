@@ -152,6 +152,7 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 - ✅ **Performance** - Architecture de renderers modulaire, JavaScript optimisé, minification CSS/JS, virtualisation pour grands carrousels
 - ✅ **Thèmes** - Support Dark/Light mode avec détection automatique des préférences système
 - ✅ **Virtualisation** - Optimisation automatique des performances pour carrousels avec 50+ items
+- ✅ **Server-Side Rendering (SSR)** - Génération HTML statique pour SEO et cache CDN
 - ✅ **Gestion d'Erreurs** - Placeholders pour images en erreur, indicateurs de chargement
 
 ## 📖 Documentation
@@ -404,6 +405,25 @@ $savedConfig = json_decode(file_get_contents('carousel-config.json'), true);
 $restoredCarousel = Carousel::fromConfig($savedConfig);
 ```
 
+#### Server-Side Rendering (SSR)
+
+```php
+// Générer HTML statique (parfait pour SSR, cache, CDN)
+$carousel = Carousel::image('galerie', $images);
+$staticHtml = $carousel->renderStatic();
+// Ce HTML peut être mis en cache, servi via CDN, indexé par les moteurs de recherche
+
+// Ajouter JavaScript pour l'interactivité (amélioration progressive)
+$fullHtml = $carousel->hydrate($staticHtml);
+// Ou charger JavaScript de manière asynchrone côté client
+```
+
+**Avantages SSR :**
+- ✅ SEO parfait (contenu dans HTML)
+- ✅ Chargement initial rapide (pas de JavaScript requis)
+- ✅ Mise en cache CDN possible
+- ✅ Amélioration progressive (ajouter JS quand nécessaire)
+
 #### Plusieurs Carrousels sur la Même Page
 
 ```php
@@ -458,6 +478,8 @@ Vous pouvez surcharger les styles en utilisant CSS :
 - `renderHtml(): string` - Afficher uniquement le HTML
 - `renderCss(): string` - Afficher uniquement le CSS
 - `renderJs(): string` - Afficher uniquement le JavaScript
+- `renderStatic(): string` - Afficher HTML statique avec CSS (SSR, sans JS)
+- `hydrate(string $staticHtml): string` - Ajouter JavaScript au HTML statique
 - `getId(): string` - Obtenir l'ID du carousel
 - `getType(): string` - Obtenir le type de carousel
 - `getItems(): array` - Obtenir tous les items
