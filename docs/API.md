@@ -306,6 +306,61 @@ $restored = Carousel::fromConfig($config);
 
 ---
 
+#### `renderStatic(): string`
+
+Render static HTML with CSS (no JavaScript). Perfect for Server-Side Rendering (SSR), caching, and CDN delivery.
+
+**Returns:** `string` - Static HTML with CSS (no JavaScript)
+
+**Example:**
+```php
+// Generate static HTML (can be cached, served via CDN)
+$staticHtml = $carousel->renderStatic();
+// HTML is fully functional for display, but no interactivity yet
+```
+
+**Use Cases:**
+- Server-Side Rendering (SSR)
+- Static site generation
+- CDN caching
+- Progressive enhancement (add JavaScript later)
+
+---
+
+#### `hydrate(string $staticHtml): string`
+
+Add JavaScript to static HTML for full interactivity. Use after `renderStatic()`.
+
+**Parameters:**
+- `$staticHtml` (string): Static HTML from `renderStatic()`
+
+**Returns:** `string` - HTML with JavaScript hydration
+
+**Example:**
+```php
+// Step 1: Generate static HTML (can be cached)
+$staticHtml = $carousel->renderStatic();
+
+// Step 2: Add JavaScript when needed (progressive enhancement)
+$fullHtml = $carousel->hydrate($staticHtml);
+```
+
+**SSR Workflow:**
+```php
+// Server-side: Generate static HTML
+$staticHtml = $carousel->renderStatic();
+// Cache this HTML, serve via CDN
+
+// Client-side: Add interactivity when JavaScript loads
+// Option 1: Server-side hydration
+$fullHtml = $carousel->hydrate($staticHtml);
+
+// Option 2: Client-side hydration (async)
+// Load JavaScript separately, let it initialize the carousel
+```
+
+---
+
 ## Static Factory Methods
 
 ### `image(string $id, array $images, array $options = []): self`

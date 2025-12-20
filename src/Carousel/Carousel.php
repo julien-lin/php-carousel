@@ -149,6 +149,32 @@ class Carousel
     }
 
     /**
+     * Render static HTML (SSR - no JavaScript for initial display)
+     * 
+     * @return string Static HTML with CSS (no JavaScript)
+     */
+    public function renderStatic(): string
+    {
+        $html = $this->getRenderer()->getHtmlRenderer()->render($this);
+        $css = $this->getRenderer()->getCssRenderer()->render($this);
+        
+        return $css . "\n" . $html;
+    }
+
+    /**
+     * Hydrate static HTML with JavaScript for interactivity
+     * 
+     * @param string $staticHtml Static HTML from renderStatic()
+     * @return string HTML with JavaScript hydration
+     */
+    public function hydrate(string $staticHtml): string
+    {
+        $js = $this->getRenderer()->getJsRenderer()->render($this);
+        
+        return $staticHtml . "\n" . $js;
+    }
+
+    /**
      * Get carousel ID
      */
     public function getId(): string
