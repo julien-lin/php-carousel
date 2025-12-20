@@ -149,7 +149,9 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 - ✅ **Personnalisable** - Options de configuration étendues
 - ✅ **Conforme WCAG 2.1 AA** - Support complet de l'accessibilité (ARIA, lecteurs d'écran, prefers-reduced-motion)
 - ✅ **Sécurité** - Prévention XSS, validation d'URL, sanitization des entrées
-- ✅ **Performance** - Architecture de renderers modulaire, JavaScript optimisé, minification CSS/JS
+- ✅ **Performance** - Architecture de renderers modulaire, JavaScript optimisé, minification CSS/JS, virtualisation pour grands carrousels
+- ✅ **Thèmes** - Support Dark/Light mode avec détection automatique des préférences système
+- ✅ **Virtualisation** - Optimisation automatique des performances pour carrousels avec 50+ items
 - ✅ **Gestion d'Erreurs** - Placeholders pour images en erreur, indicateurs de chargement
 
 ## 📖 Documentation
@@ -293,6 +295,57 @@ echo $carousel->renderCss();
 
 // Afficher uniquement le JavaScript (avant </body>)
 echo $carousel->renderJs();
+```
+
+#### Support Thèmes Dark/Light
+
+```php
+// Thème automatique (respecte les préférences système)
+$carousel = Carousel::image('galerie', $images, [
+    'theme' => 'auto', // Bascule automatiquement selon prefers-color-scheme
+]);
+
+// Thème clair
+$carousel = Carousel::card('produits', $produits, [
+    'theme' => 'light',
+]);
+
+// Thème sombre
+$carousel = Carousel::image('hero', $bannières, [
+    'theme' => 'dark',
+]);
+
+// Couleurs de thème personnalisées
+$carousel = Carousel::card('custom', $items, [
+    'theme' => 'light',
+    'themeColors' => [
+        'light' => [
+            'background' => '#ffffff',
+            'text' => '#000000',
+            'cardBackground' => '#f5f5f5',
+        ],
+        'dark' => [
+            'background' => '#1a1a1a',
+            'text' => '#ffffff',
+            'cardBackground' => '#2a2a2a',
+        ],
+    ],
+]);
+```
+
+#### Virtualisation pour Grands Carrousels
+
+```php
+// Activer la virtualisation pour les performances avec beaucoup d'items
+$carousel = Carousel::image('grande-galerie', $beaucoupImages, [
+    'virtualization' => true,
+    'virtualizationBuffer' => 5, // Afficher 5 slides de chaque côté
+]);
+
+// Activation automatique quand les items dépassent le seuil (par défaut: 50)
+$carousel = Carousel::gallery('galerie-photos', $beaucoupPhotos, [
+    'virtualizationThreshold' => 30, // Activer à 30 items au lieu de 50
+]);
 ```
 
 #### Plusieurs Carrousels sur la Même Page

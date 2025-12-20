@@ -546,6 +546,56 @@ $array = $item->toArray();
 | `responsive` | bool | true | Enable responsive design |
 | `minify` | bool | false | Minify CSS and JavaScript output |
 
+### Theme Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `theme` | string | 'auto' | Theme mode: 'auto', 'light', 'dark' |
+| `themeColors` | array\|null | null | Custom theme colors (see [Theme Colors](#theme-colors)) |
+
+**Theme Modes:**
+- `'auto'`: Automatically switches based on `prefers-color-scheme` media query
+- `'light'`: Always use light theme
+- `'dark'`: Always use dark theme
+
+**Example:**
+```php
+$carousel = new Carousel('test', Carousel::TYPE_IMAGE, [
+    'theme' => 'dark',
+    'themeColors' => [
+        'light' => [
+            'background' => '#ffffff',
+            'text' => '#000000',
+        ],
+        'dark' => [
+            'background' => '#1a1a1a',
+            'text' => '#ffffff',
+        ],
+    ],
+]);
+```
+
+### Performance Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `virtualization` | bool | false | Enable virtualization for large carousels (50+ items) |
+| `virtualizationThreshold` | int | 50 | Minimum number of items to auto-enable virtualization |
+| `virtualizationBuffer` | int | 3 | Number of slides to keep visible on each side of current slide |
+
+**Virtualization:**
+Virtualization improves performance for carousels with many items (50+) by only rendering slides near the current position. Slides outside the buffer are hidden with `display: none`.
+
+**Example:**
+```php
+$carousel = new Carousel('large-gallery', Carousel::TYPE_IMAGE, [
+    'virtualization' => true,
+    'virtualizationBuffer' => 5, // Show 5 slides on each side
+]);
+```
+
+**Note:** Virtualization is automatically enabled when the number of items exceeds `virtualizationThreshold`, even if `virtualization` is `false`.
+
 ---
 
 ## Exceptions
