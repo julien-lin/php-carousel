@@ -582,6 +582,8 @@ $carousel = new Carousel('test', Carousel::TYPE_IMAGE, [
 | `virtualization` | bool | false | Enable virtualization for large carousels (50+ items) |
 | `virtualizationThreshold` | int | 50 | Minimum number of items to auto-enable virtualization |
 | `virtualizationBuffer` | int | 3 | Number of slides to keep visible on each side of current slide |
+| `customTransition` | array\|null | null | Custom transition configuration (see [Custom Transitions](#custom-transitions)) |
+| `animations` | array | [] | Custom CSS animations (see [Custom Animations](#custom-animations)) |
 
 **Virtualization:**
 Virtualization improves performance for carousels with many items (50+) by only rendering slides near the current position. Slides outside the buffer are hidden with `display: none`.
@@ -595,6 +597,65 @@ $carousel = new Carousel('large-gallery', Carousel::TYPE_IMAGE, [
 ```
 
 **Note:** Virtualization is automatically enabled when the number of items exceeds `virtualizationThreshold`, even if `virtualization` is `false`.
+
+### Custom Transitions
+
+Custom transitions allow you to define your own CSS transition properties.
+
+**Configuration:**
+```php
+$carousel = new Carousel('custom', Carousel::TYPE_IMAGE, [
+    'customTransition' => [
+        'duration' => 600,                    // Duration in milliseconds (default: 500)
+        'timingFunction' => 'cubic-bezier(0.4, 0, 0.2, 1)', // CSS timing function (default: cubic-bezier(0.4, 0, 0.2, 1))
+        'properties' => ['transform', 'opacity'], // CSS properties to animate (default: ['transform'])
+    ],
+]);
+```
+
+**Note:** When `customTransition` is set, the `transition` option is automatically set to `'custom'`.
+
+### Custom Animations
+
+Custom animations allow you to define CSS animations with keyframes.
+
+**Simple Animation (String):**
+```php
+$carousel = new Carousel('animated', Carousel::TYPE_IMAGE, [
+    'animations' => [
+        'slideIn' => 'slideInFromRight 0.5s ease-out',
+        'slideOut' => 'slideOutToLeft 0.5s ease-in',
+    ],
+]);
+```
+
+**Keyframes Animation (Array):**
+```php
+$carousel = new Carousel('animated', Carousel::TYPE_IMAGE, [
+    'animations' => [
+        'fadeIn' => [
+            'keyframes' => [
+                'name' => 'carousel-fade-in',
+                'steps' => [
+                    '0%' => ['opacity' => '0'],
+                    '100%' => ['opacity' => '1'],
+                ],
+            ],
+            'duration' => '0.5s',
+            'timingFunction' => 'ease-out',
+            'delay' => '0.1s',           // Optional
+            'iterationCount' => '1',     // Optional (default: 1)
+            'direction' => 'normal',     // Optional (normal, reverse, alternate, alternate-reverse)
+        ],
+    ],
+]);
+```
+
+**Usage in HTML:**
+After defining animations, you can apply them by adding the animation class to elements:
+```html
+<div class="carousel-animation-fadeIn">...</div>
+```
 
 ---
 
