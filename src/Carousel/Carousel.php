@@ -181,6 +181,75 @@ class Carousel
     }
 
     /**
+     * Export carousel configuration to array
+     * 
+     * @return array Configuration array with id, type, items, and options
+     */
+    public function exportConfig(): array
+    {
+        $items = [];
+        foreach ($this->items as $item) {
+            if ($item instanceof CarouselItem) {
+                $items[] = $item->toArray();
+            } else {
+                // If somehow an array got in, keep it as is
+                $items[] = $item;
+            }
+        }
+        
+        return [
+            'id' => $this->id,
+            'type' => $this->type,
+            'items' => $items,
+            'options' => $this->options,
+        ];
+    }
+
+    /**
+     * Create a carousel from exported configuration
+     * 
+     * @param array $config Configuration array (from exportConfig())
+     * @return self New Carousel instance
+     * @throws \InvalidArgumentException If configuration is invalid
+     */
+    public static function fromConfig(array $config): self
+    {
+        // Validate required fields
+        if (!isset($config['id']) || !is_string($config['id'])) {
+            throw new \InvalidArgumentException('Configuration must contain a valid "id" field');
+        }
+        
+        if (!isset($config['type']) || !is_string($config['type'])) {
+            throw new \InvalidArgumentException('Configuration must contain a valid "type" field');
+        }
+        
+        // Validate type
+        $validTypes = [
+            self::TYPE_IMAGE,
+            self::TYPE_CARD,
+            self::TYPE_TESTIMONIAL,
+            self::TYPE_GALLERY,
+            self::TYPE_SIMPLE,
+            self::TYPE_INFINITE,
+        ];
+        
+        if (!in_array($config['type'], $validTypes, true)) {
+            throw new InvalidCarouselTypeException($config['type'], $validTypes);
+        }
+        
+        // Create carousel
+        $options = $config['options'] ?? [];
+        $carousel = new self($config['id'], $config['type'], $options);
+        
+        // Add items if provided
+        if (isset($config['items']) && is_array($config['items'])) {
+            $carousel->addItems($config['items']);
+        }
+        
+        return $carousel;
+    }
+
+    /**
      * Get default options
      */
     private function getDefaultOptions(): array

@@ -386,6 +386,24 @@ $carousel = Carousel::image('keyframes', $images, [
 ]);
 ```
 
+#### Export/Import Configuration
+
+```php
+// Export carousel configuration
+$carousel = Carousel::image('gallery', $images, [
+    'autoplay' => true,
+    'theme' => 'dark',
+]);
+$config = $carousel->exportConfig();
+
+// Save to file
+file_put_contents('carousel-config.json', json_encode($config, JSON_PRETTY_PRINT));
+
+// Load and restore from file
+$savedConfig = json_decode(file_get_contents('carousel-config.json'), true);
+$restoredCarousel = Carousel::fromConfig($savedConfig);
+```
+
 #### Multiple Carousels on Same Page
 
 ```php
@@ -444,6 +462,8 @@ You can override styles using CSS:
 - `getType(): string` - Get carousel type
 - `getItems(): array` - Get all items
 - `getOptions(): array` - Get all options
+- `exportConfig(): array` - Export configuration to array
+- `fromConfig(array $config): self` - Create carousel from configuration (static)
 
 ### CarouselItem Class
 

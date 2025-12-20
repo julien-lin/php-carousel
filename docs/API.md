@@ -239,6 +239,73 @@ Get all carousel options.
 
 ---
 
+#### `exportConfig(): array`
+
+Export carousel configuration to an array. Useful for saving/restoring carousel state.
+
+**Returns:** `array` - Configuration array with `id`, `type`, `items`, and `options`
+
+**Example:**
+```php
+$config = $carousel->exportConfig();
+// Save to file
+file_put_contents('carousel-config.json', json_encode($config, JSON_PRETTY_PRINT));
+```
+
+**Configuration Structure:**
+```php
+[
+    'id' => 'carousel-id',
+    'type' => 'image',
+    'items' => [
+        ['id' => '1', 'image' => 'image1.jpg'],
+        ['id' => '2', 'image' => 'image2.jpg'],
+    ],
+    'options' => [
+        'autoplay' => true,
+        'autoplayInterval' => 5000,
+        // ... all other options
+    ],
+]
+```
+
+---
+
+#### `fromConfig(array $config): self`
+
+Create a carousel from an exported configuration array.
+
+**Parameters:**
+- `$config` (array): Configuration array (from `exportConfig()`)
+
+**Returns:** `self` - New Carousel instance
+
+**Throws:**
+- `InvalidArgumentException` if configuration is missing required fields
+- `InvalidCarouselTypeException` if type is invalid
+
+**Example:**
+```php
+// Load from file
+$config = json_decode(file_get_contents('carousel-config.json'), true);
+$carousel = Carousel::fromConfig($config);
+```
+
+**Round-trip Example:**
+```php
+// Export
+$original = Carousel::image('gallery', ['img1.jpg', 'img2.jpg'], [
+    'autoplay' => true,
+    'theme' => 'dark',
+]);
+$config = $original->exportConfig();
+
+// Import (creates identical carousel)
+$restored = Carousel::fromConfig($config);
+```
+
+---
+
 ## Static Factory Methods
 
 ### `image(string $id, array $images, array $options = []): self`
