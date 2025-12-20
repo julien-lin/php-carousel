@@ -197,6 +197,8 @@ class Carousel
             'itemsPerSlideTablet' => 1,
             'itemsPerSlideMobile' => 1,
             'gap' => 16,
+            'theme' => 'auto', // auto, light, dark
+            'themeColors' => null, // null = defaults, or ['light' => [...], 'dark' => [...]]
             'transition' => 'slide', // slide, fade, cube
             'transitionDuration' => 500,
             'height' => 'auto',
