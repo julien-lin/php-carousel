@@ -50,7 +50,12 @@ class HtmlRenderer extends AbstractRenderer
         }
         
         $transition = $options['transition'] ?? 'slide';
-        $html = '<div class="carousel-container" id="carousel-' . $this->escape($id) . '" data-carousel-id="' . $this->escape($id) . '" data-carousel-type="' . $this->escape($type) . '" data-carousel-transition="' . $this->escape($transition) . '">';
+        $theme = $options['theme'] ?? 'auto';
+        $hasCustomColors = isset($options['themeColors']) && is_array($options['themeColors']);
+        // Only add data-theme attribute if theme is explicitly set (not default 'auto') or custom colors provided
+        // This maintains backward compatibility with CarouselRenderer
+        $themeAttr = ($theme !== 'auto' || $hasCustomColors) ? ' data-theme="' . $this->escape($theme) . '"' : '';
+        $html = '<div class="carousel-container" id="carousel-' . $this->escape($id) . '" data-carousel-id="' . $this->escape($id) . '" data-carousel-type="' . $this->escape($type) . '" data-carousel-transition="' . $this->escape($transition) . '"' . $themeAttr . '>';
         
         // Loading indicator
         $html .= '<div class="carousel-loading" aria-hidden="true" role="status" aria-label="' . $this->escape($this->translator->translate('loading')) . '">';
