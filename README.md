@@ -153,6 +153,8 @@ Advanced gallery with thumbnail navigation for easy browsing.
 - ✅ **Themes** - Dark/Light mode support with automatic system preference detection
 - ✅ **Virtualization** - Automatic performance optimization for carousels with 50+ items
 - ✅ **Server-Side Rendering (SSR)** - Static HTML generation for SEO and CDN caching
+- ✅ **Built-in Analytics** - Automatic tracking of impressions, clicks, and interactions with detailed reports
+- ✅ **A/B Testing Built-in** - Integrated variant testing with cookie, hash, or random selection
 - ✅ **Error Handling** - Image error placeholders, loading indicators
 
 ## 📖 Documentation
