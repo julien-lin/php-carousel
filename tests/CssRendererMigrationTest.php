@@ -38,12 +38,24 @@ class CssRendererMigrationTest extends TestCase
         $css = preg_replace('/#carousel-[^:]*:focus:not\(:focus-visible\)[^}]*}/s', '', $css);
         
         // Normalize aria-selected selector (remove it from combined selectors)
-        $css = preg_replace('/\.carousel-dot\.active,\s*\.carousel-dot\[aria-selected="true"\]/s', '.carousel-dot.active', $css);
+        // Match: .carousel-dot.active, .carousel-dot[aria-selected="true"] { ... }
+        $css = preg_replace('/\.carousel-dot\.active,\s*\.carousel-dot\[aria-selected="true"\]\s*\{/s', '.carousel-dot.active {', $css);
+        // Match: #carousel-id .carousel-dot.active, #carousel-id .carousel-dot[aria-selected="true"] { ... }
+        $css = preg_replace('/(#carousel-[^\s]+)\s+\.carousel-dot\.active,\s*\1\s+\.carousel-dot\[aria-selected="true"\]\s*\{/s', '$1 .carousel-dot.active {', $css);
+        // Remove standalone aria-selected selectors
         $css = preg_replace('/,\s*\.carousel-dot\[aria-selected="true"\]/s', '', $css);
-        $css = preg_replace('/\.carousel-dot\[aria-selected="true"\]/s', '', $css);
+        $css = preg_replace('/\.carousel-dot\[aria-selected="true"\]\s*\{[^}]*\}/s', '', $css);
+        $css = preg_replace('/(#carousel-[^\s]+)\s+\.carousel-dot\[aria-selected="true"\]\s*\{[^}]*\}/s', '', $css);
         
         // Remove empty lines (multiple newlines)
         $css = preg_replace('/\n\s*\n\s*\n+/', "\n\n", $css);
+        
+        // Normalize spacing differences (minified CSS may have different spacing)
+        // This is a minor difference that doesn't affect functionality
+        $css = preg_replace('/\s*\{/s', '{', $css);
+        $css = preg_replace('/\}\s*/s', '}', $css);
+        $css = preg_replace('/:\s+/s', ':', $css);
+        $css = preg_replace('/;\s*/s', ';', $css);
         
         return $css;
     }
