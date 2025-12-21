@@ -23,6 +23,32 @@ class CssRendererMigrationTest extends TestCase
     }
 
     /**
+     * Normalize CSS by removing accessibility enhancements (focus-visible styles)
+     * that were added after the legacy renderer
+     */
+    private function normalizeCss(string $css): string
+    {
+        // Remove focus-visible styles (added in Phase 4.3)
+        $css = preg_replace('/\/\* Enhanced focus styles[^*]*\*\/.*?}/s', '', $css);
+        $css = preg_replace('/\.carousel-arrow:focus-visible[^}]*}/s', '', $css);
+        $css = preg_replace('/\.carousel-arrow:focus:not\(:focus-visible\)[^}]*}/s', '', $css);
+        $css = preg_replace('/\.carousel-dot:focus-visible[^}]*}/s', '', $css);
+        $css = preg_replace('/\.carousel-dot:focus:not\(:focus-visible\)[^}]*}/s', '', $css);
+        $css = preg_replace('/#carousel-[^:]*:focus-visible[^}]*}/s', '', $css);
+        $css = preg_replace('/#carousel-[^:]*:focus:not\(:focus-visible\)[^}]*}/s', '', $css);
+        
+        // Normalize aria-selected selector (remove it from combined selectors)
+        $css = preg_replace('/\.carousel-dot\.active,\s*\.carousel-dot\[aria-selected="true"\]/s', '.carousel-dot.active', $css);
+        $css = preg_replace('/,\s*\.carousel-dot\[aria-selected="true"\]/s', '', $css);
+        $css = preg_replace('/\.carousel-dot\[aria-selected="true"\]/s', '', $css);
+        
+        // Remove empty lines (multiple newlines)
+        $css = preg_replace('/\n\s*\n\s*\n+/', "\n\n", $css);
+        
+        return $css;
+    }
+
+    /**
      * Test CSS output is identical for image carousel
      */
     public function testCssOutputIdenticalForImageCarousel(): void
@@ -30,11 +56,11 @@ class CssRendererMigrationTest extends TestCase
         $carousel = Carousel::image('test-' . uniqid(), ['image1.jpg']);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
@@ -49,11 +75,11 @@ class CssRendererMigrationTest extends TestCase
         ]);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
@@ -68,11 +94,11 @@ class CssRendererMigrationTest extends TestCase
         ]);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
@@ -87,11 +113,11 @@ class CssRendererMigrationTest extends TestCase
         ]);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
@@ -110,11 +136,11 @@ class CssRendererMigrationTest extends TestCase
         ]);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
@@ -128,11 +154,11 @@ class CssRendererMigrationTest extends TestCase
         $carousel->setOptions(['minify' => true]);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
@@ -145,11 +171,11 @@ class CssRendererMigrationTest extends TestCase
         $carousel = Carousel::infiniteCarousel('test-' . uniqid(), ['image1.jpg', 'image2.jpg']);
         
         $legacyRenderer = new CarouselRenderer($carousel);
-        $legacyCss = $legacyRenderer->renderCss();
+        $legacyCss = $this->normalizeCss($legacyRenderer->renderCss());
         
         RenderCacheService::clear();
         $newRenderer = new CssRenderer();
-        $newCss = $newRenderer->render($carousel);
+        $newCss = $this->normalizeCss($newRenderer->render($carousel));
         
         $this->assertEquals($legacyCss, $newCss);
     }
