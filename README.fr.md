@@ -153,6 +153,8 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 - ✅ **Thèmes** - Support Dark/Light mode avec détection automatique des préférences système
 - ✅ **Virtualisation** - Optimisation automatique des performances pour carrousels avec 50+ items
 - ✅ **Server-Side Rendering (SSR)** - Génération HTML statique pour SEO et cache CDN
+- ✅ **Analytics Intégrés** - Tracking automatique des impressions, clics et interactions avec rapports détaillés
+- ✅ **A/B Testing Built-in** - Tests de variantes intégrés avec sélection par cookie, hash ou random
 - ✅ **Gestion d'Erreurs** - Placeholders pour images en erreur, indicateurs de chargement
 
 ## 📖 Documentation
@@ -430,6 +432,76 @@ $fullHtml = $carousel->hydrate($staticHtml);
 - ✅ Chargement initial rapide (pas de JavaScript requis)
 - ✅ Mise en cache CDN possible
 - ✅ Amélioration progressive (ajouter JS quand nécessaire)
+
+#### Analytics Intégrés
+
+```php
+use JulienLinard\Carousel\Analytics\FileAnalytics;
+
+// Créer un provider analytics
+$analytics = new FileAnalytics('/var/log/carousel');
+
+// Créer un carousel avec analytics activé
+$carousel = Carousel::image('galerie', $images, [
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+// Le tracking est automatique (impressions, clics, interactions)
+echo $carousel->render();
+
+// Obtenir un rapport
+$report = $analytics->getReport('galerie');
+// Retourne : [
+//     'total_impressions' => 1250,
+//     'total_clicks' => 340,
+//     'ctr' => 0.272,
+//     'most_viewed_slide' => 2,
+//     'interaction_breakdown' => [...],
+// ]
+```
+
+#### A/B Testing Built-in
+
+```php
+use JulienLinard\Carousel\ABTesting\ABTest;
+use JulienLinard\Carousel\Analytics\FileAnalytics;
+
+$analytics = new FileAnalytics('/var/log/carousel');
+
+// Créer deux variantes de carousel
+$carouselA = Carousel::heroBanner('hero-a', $bannersA, [
+    'autoplayInterval' => 3000,
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+$carouselB = Carousel::heroBanner('hero-b', $bannersB, [
+    'autoplayInterval' => 5000,
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+// Créer un test A/B
+$test = new ABTest('hero-banner-test', [
+    'variant_a' => ['carousel' => $carouselA, 'weight' => 50],
+    'variant_b' => ['carousel' => $carouselB, 'weight' => 50],
+], [
+    'method' => ABTest::METHOD_COOKIE, // Cohérence via cookie
+    'analytics' => $analytics,
+]);
+
+// Définir le cookie (avant output)
+$test->setCookie(30); // 30 jours
+
+// Obtenir le carousel sélectionné
+$carousel = $test->getCarousel();
+echo $carousel->render();
+
+// Plus tard, comparer les statistiques
+$stats = $test->getVariantStats();
+// Compare les performances des deux variantes
+```
 
 #### Plusieurs Carrousels sur la Même Page
 

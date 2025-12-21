@@ -431,6 +431,76 @@ $fullHtml = $carousel->hydrate($staticHtml);
 - ✅ CDN cacheable
 - ✅ Progressive enhancement (add JS when needed)
 
+#### Built-in Analytics
+
+```php
+use JulienLinard\Carousel\Analytics\FileAnalytics;
+
+// Create analytics provider
+$analytics = new FileAnalytics('/var/log/carousel');
+
+// Create carousel with analytics enabled
+$carousel = Carousel::image('gallery', $images, [
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+// Tracking is automatic (impressions, clicks, interactions)
+echo $carousel->render();
+
+// Get report
+$report = $analytics->getReport('gallery');
+// Returns: [
+//     'total_impressions' => 1250,
+//     'total_clicks' => 340,
+//     'ctr' => 0.272,
+//     'most_viewed_slide' => 2,
+//     'interaction_breakdown' => [...],
+// ]
+```
+
+#### A/B Testing Built-in
+
+```php
+use JulienLinard\Carousel\ABTesting\ABTest;
+use JulienLinard\Carousel\Analytics\FileAnalytics;
+
+$analytics = new FileAnalytics('/var/log/carousel');
+
+// Create two carousel variants
+$carouselA = Carousel::heroBanner('hero-a', $bannersA, [
+    'autoplayInterval' => 3000,
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+$carouselB = Carousel::heroBanner('hero-b', $bannersB, [
+    'autoplayInterval' => 5000,
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+// Create A/B test
+$test = new ABTest('hero-banner-test', [
+    'variant_a' => ['carousel' => $carouselA, 'weight' => 50],
+    'variant_b' => ['carousel' => $carouselB, 'weight' => 50],
+], [
+    'method' => ABTest::METHOD_COOKIE, // Consistency via cookie
+    'analytics' => $analytics,
+]);
+
+// Set cookie (before output)
+$test->setCookie(30); // 30 days
+
+// Get selected carousel
+$carousel = $test->getCarousel();
+echo $carousel->render();
+
+// Later, compare statistics
+$stats = $test->getVariantStats();
+// Compare performance of both variants
+```
+
 #### Multiple Carousels on Same Page
 
 ```php

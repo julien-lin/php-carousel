@@ -979,6 +979,117 @@ $jsRenderer = $renderer->getJsRenderer();
 
 ---
 
+## A/B Testing
+
+### `ABTest` Class
+
+The `ABTest` class allows you to test multiple carousel variants and track their performance using analytics.
+
+#### Constructor
+
+```php
+public function __construct(
+    string $testId,
+    array $variants,
+    array $options = []
+)
+```
+
+**Parameters:**
+- `$testId` (string): Unique test identifier
+- `$variants` (array): Array of variants `['variant_id' => ['carousel' => Carousel, 'weight' => int]]`
+- `$options` (array): Options array
+  - `method` (string): Selection method (`ABTest::METHOD_COOKIE`, `ABTest::METHOD_RANDOM`, `ABTest::METHOD_HASH`)
+  - `userId` (string): User ID for hash-based selection (required for `METHOD_HASH`)
+  - `analytics` (AnalyticsInterface): Analytics provider for tracking
+
+#### Methods
+
+##### `getTestId(): string`
+Get the test ID.
+
+##### `getSelectedVariant(): string`
+Get the selected variant ID.
+
+##### `getCarousel(): Carousel`
+Get the carousel for the selected variant.
+
+##### `getVariantIds(): array`
+Get all variant IDs.
+
+##### `isVariantSelected(string $variantId): bool`
+Check if a variant is selected.
+
+##### `setCookie(int $expiryDays = 30): void`
+Set cookie for variant selection (for cookie-based method).
+
+##### `getVariantStats(?\DateTime $startDate = null, ?\DateTime $endDate = null): array`
+Get statistics for all variants from analytics.
+
+#### Selection Methods
+
+- **`METHOD_COOKIE`**: Uses cookie to maintain consistency across page loads
+- **`METHOD_RANDOM`**: Random selection based on weights
+- **`METHOD_HASH`**: Hash-based selection for consistent user assignment (requires `userId`)
+
+#### Example
+
+```php
+use JulienLinard\Carousel\ABTesting\ABTest;
+use JulienLinard\Carousel\Analytics\FileAnalytics;
+
+$analytics = new FileAnalytics('/var/log/carousel');
+
+$carouselA = Carousel::heroBanner('hero-a', $bannersA, [
+    'autoplayInterval' => 3000,
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+$carouselB = Carousel::heroBanner('hero-b', $bannersB, [
+    'autoplayInterval' => 5000,
+    'analytics' => true,
+    'analyticsProvider' => $analytics,
+]);
+
+$test = new ABTest('hero-banner-test', [
+    'variant_a' => [
+        'carousel' => $carouselA,
+        'weight' => 50, // 50% of traffic
+    ],
+    'variant_b' => [
+        'carousel' => $carouselB,
+        'weight' => 50, // 50% of traffic
+    ],
+], [
+    'method' => ABTest::METHOD_COOKIE,
+    'analytics' => $analytics,
+]);
+
+// Set cookie (call before output)
+$test->setCookie(30); // 30 days expiry
+
+// Get selected carousel
+$carousel = $test->getCarousel();
+echo $carousel->render();
+
+// Later, get statistics
+$stats = $test->getVariantStats();
+// Returns: [
+//     'variant_a' => ['impressions' => 1250, 'clicks' => 340, 'ctr' => 0.272, ...],
+//     'variant_b' => ['impressions' => 1180, 'clicks' => 290, 'ctr' => 0.246, ...],
+// ]
+```
+
+#### Weight Normalization
+
+If the sum of weights is not 100, they will be automatically normalized. For example:
+- Weights `[80, 20]` → `[80, 20]` (already 100)
+- Weights `[120, 80]` → `[60, 40]` (normalized to 100)
+- Weights `[50, 50, 50]` → `[33, 33, 34]` (normalized to 100)
+
+---
+
 ## Support
 
 - **Issues**: https://github.com/julien-lin/php-carousel/issues
