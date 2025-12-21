@@ -159,12 +159,28 @@ Advanced gallery with thumbnail navigation for easy browsing.
 
 ## 📖 Documentation
 
+### Core Documentation
 - [API Reference](docs/API.md) - Complete API documentation
+- [Best Practices](docs/BEST_PRACTICES.md) - Production-ready guidelines
+- [Migration Guide](docs/MIGRATION_SWIPER.md) - Migrate from Swiper.js
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+### Advanced Topics
+- [Accessibility Guide](docs/ACCESSIBILITY.md) - WCAG 2.1 AAA compliance
+- [Performance Guide](docs/PERFORMANCE.md) - Optimization techniques
+- [E2E Testing](docs/E2E_TESTING.md) - End-to-end testing guide
+
+### Integration Guides
 - [CMS Integration](docs/INTEGRATION_CMS.md) - WordPress, PrestaShop, Drupal
 - [Twig Integration](docs/INTEGRATION_TWIG.md) - Twig templating engine
 - [Blade Integration](docs/INTEGRATION_BLADE.md) - Laravel Blade templating
 - [React Integration](docs/INTEGRATION_REACT.md) - React.js integration
 - [Vue Integration](docs/INTEGRATION_VUE.md) - Vue.js integration
+
+### Examples & Tutorials
+- [CodePen Examples](docs/CODEPEN_EXAMPLES.md) - Interactive examples
+- [Video Tutorials](docs/VIDEO_TUTORIALS.md) - Tutorial scripts
+- [Usage Examples](docs/EXEMPLES_UTILISATION.md) - Code examples
 
 ### Carousel Types
 
