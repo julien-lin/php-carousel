@@ -110,6 +110,10 @@ class JsRenderer extends AbstractRenderer
         $virtualizationThreshold = $options['virtualizationThreshold'] ?? 50;
         $virtualizationBuffer = $options['virtualizationBuffer'] ?? 3;
         
+        // Analytics settings
+        $analyticsEnabled = ($options['analytics'] ?? false) ? 'true' : 'false';
+        $analyticsEndpoint = $this->escape('/api/carousel/analytics'); // Default endpoint
+        
         // Get translations for JavaScript
         $translations = [
             'slide_of' => $this->translator->translate('slide_of', null, ['current' => '{current}', 'total' => '{total}']),
@@ -146,10 +150,41 @@ const touchSwipe = {$touchSwipe};
 const virtualizationEnabled = {$virtualizationEnabled};
 const virtualizationThreshold = {$virtualizationThreshold};
 const virtualizationBuffer = {$virtualizationBuffer};
+const analyticsEnabled = {$analyticsEnabled};
+const analyticsEndpoint = "{$analyticsEndpoint}";
+
+// Analytics tracking function
+function trackAnalytics(event, data = {}) {
+    if (!analyticsEnabled) return;
+    
+    const payload = {
+        event: event,
+        carousel_id: carouselId,
+        ...data,
+        timestamp: Date.now()
+    };
+    
+    // Send to server (you can customize this endpoint)
+    if (typeof fetch !== 'undefined') {
+        fetch(analyticsEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        }).catch(err => console.warn('Analytics tracking failed:', err));
+    }
+}
 
 // Store event handler references for cleanup
-const handlePrevClick = () => prevSlide();
-const handleNextClick = () => nextSlide();
+const handlePrevClick = () => {
+    trackAnalytics('interaction', { interaction_type: 'arrow_click', direction: 'prev' });
+    prevSlide();
+};
+const handleNextClick = () => {
+    trackAnalytics('interaction', { interaction_type: 'arrow_click', direction: 'next' });
+    nextSlide();
+};
 const handleKeydown = (e) => {
     if (e.key === 'ArrowLeft') {
         prevSlide();
@@ -244,6 +279,9 @@ function updateCarousel() {
             .replace('{total}', slides.length);
         announcement.textContent = slideText;
     }
+    
+    // Track impression
+    trackAnalytics('impression', { slide_index: currentIndex });
 }
 
 function goToSlide(index) {
@@ -280,6 +318,8 @@ function handleSwipe() {
     const diff = touchStartX - touchEndX;
     
     if (Math.abs(diff) > swipeThreshold) {
+        const direction = diff > 0 ? 'next' : 'prev';
+        trackAnalytics('interaction', { interaction_type: 'swipe', direction: direction });
         if (diff > 0) {
             nextSlide();
         } else {
@@ -300,7 +340,10 @@ if (nextBtn) {
 // Dots navigation - store handlers for cleanup
 const dotHandlers = [];
 dots.forEach((dot, index) => {
-    const handler = () => goToSlide(index);
+    const handler = () => {
+        trackAnalytics('interaction', { interaction_type: 'dot_click', slide_index: index });
+        goToSlide(index);
+    };
     dotHandlers.push({ dot, handler });
     dot.addEventListener('click', handler);
 });
