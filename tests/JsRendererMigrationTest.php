@@ -38,11 +38,291 @@ class JsRendererMigrationTest extends TestCase
     }
 
     /**
-     * Normalize JavaScript by removing virtualization code (new feature)
+     * Normalize JavaScript by removing new features (virtualization, analytics)
      */
     private function normalizeVirtualization(string $js): string
     {
-        // Handle both minified and non-minified versions
+        // Special handling for minified legacy output that includes window.CarouselAPI and CarouselInstance
+        // Legacy minifies API + carousel together, but JsRenderer keeps them separate
+        // Also remove CarouselInstance class if present (legacy includes it, new doesn't)
+        if (strpos($js, 'class CarouselInstance') !== false) {
+            // Find and remove the entire CarouselInstance class
+            $classStart = strpos($js, 'class CarouselInstance');
+            if ($classStart !== false) {
+                // Find opening brace
+                $braceStart = strpos($js, '{', $classStart);
+                if ($braceStart !== false) {
+                    $braceCount = 1;
+                    $i = $braceStart + 1;
+                    $inString = false;
+                    $stringChar = '';
+                    
+                    while ($i < strlen($js) && $braceCount > 0) {
+                        $char = $js[$i];
+                        if (!$inString) {
+                            if (($char === '"' || $char === "'" || $char === '`') && ($i === 0 || $js[$i - 1] !== '\\')) {
+                                $inString = true;
+                                $stringChar = $char;
+                            } elseif ($char === '{') {
+                                $braceCount++;
+                            } elseif ($char === '}') {
+                                $braceCount--;
+                            }
+                        } elseif ($char === $stringChar && ($i === 0 || $js[$i - 1] !== '\\')) {
+                            $inString = false;
+                        }
+                        $i++;
+                    }
+                    
+                    // Remove the class
+                    $js = substr_replace($js, '', $classStart, $i - $classStart);
+                }
+            }
+        }
+        
+        if (strpos($js, 'window.CarouselAPI=') !== false) {
+            // Find and remove the entire CarouselAPI IIFE
+            // Pattern: window.CarouselAPI=(function(){{...}})();class...
+            $apiStart = strpos($js, 'window.CarouselAPI=');
+            if ($apiStart !== false) {
+                // Skip to opening paren after = 
+                $openParen = strpos($js, '(', $apiStart);
+                if ($openParen !== false) {
+                    // Count parens to find matching close for the IIFE expression
+                    $parenCount = 1;
+                    $i = $openParen + 1;
+                    $inString = false;
+                    $stringChar = '';
+
+                    while ($i < strlen($js) && $parenCount > 0) {
+                        $char = $js[$i];
+                        if (!$inString) {
+                            if (($char === '"' || $char === "'" || $char === '`') && ($i === 0 || $js[$i - 1] !== '\\')) {
+                                $inString = true;
+                                $stringChar = $char;
+                            } elseif ($char === '(') {
+                                $parenCount++;
+                            } elseif ($char === ')') {
+                                $parenCount--;
+                            }
+                        } elseif ($char === $stringChar && ($i === 0 || $js[$i - 1] !== '\\')) {
+                            $inString = false;
+                        }
+                        $i++;
+                    }
+
+                    // After loop, $i points AFTER the closing ) of the IIFE expression
+                    // Now we need to consume (); which immediately follows
+                    // Pattern: })();
+                    if ($i < strlen($js) && $js[$i] === '(') {
+                        $i++; // Skip opening paren of invocation
+                    }
+                    if ($i < strlen($js) && $js[$i] === ')') {
+                        $i++; // Skip closing paren of invocation
+                    }
+                    // Also consume the semicolon if present
+                    if ($i < strlen($js) && $js[$i] === ';') {
+                        $i++;
+                    }
+
+                    // Remove the entire API declaration
+                    $js = substr_replace($js, '', $apiStart, $i - $apiStart);
+                }
+            }
+        }
+
+        // Remove analytics variable declarations
+        $js = str_replace("const analyticsEnabled = false;\n", '', $js);
+        $js = str_replace('const analyticsEndpoint = "/api/carousel/analytics";' . "\n", '', $js);
+
+        // Remove the entire analytics tracking function block
+        $analyticsStart = strpos($js, '// Analytics tracking function');
+        if ($analyticsStart !== false) {
+            $funcStart = strpos($js, 'function trackAnalytics', $analyticsStart);
+            if ($funcStart !== false) {
+                // Find end of parameter list
+                $parenEnd = strpos($js, ')', $funcStart);
+                if ($parenEnd !== false) {
+                    // Find opening brace of function body (after params)
+                    $braceStart = strpos($js, '{', $parenEnd);
+                    if ($braceStart !== false) {
+                        $braceCount = 1;
+                        $i = $braceStart + 1;
+                        $inString = false;
+                        $stringChar = '';
+
+                        // Find matching closing brace
+                        while ($i < strlen($js) && $braceCount > 0) {
+                            $char = $js[$i];
+                            if (!$inString) {
+                                if ($char === '"' || $char === "'" || $char === '`') {
+                                    $inString = true;
+                                    $stringChar = $char;
+                                } elseif ($char === '{') {
+                                    $braceCount++;
+                                } elseif ($char === '}') {
+                                    $braceCount--;
+                                }
+                            } elseif ($char === $stringChar && ($i === 0 || $js[$i - 1] !== '\\')) {
+                                $inString = false;
+                            }
+                            $i++;
+                        }
+
+                        // Find next newline after closing brace and remove the whole block
+                        $nextNewline = strpos($js, "\n", $i);
+                        if ($nextNewline !== false) {
+                            $js = substr_replace($js, '', $analyticsStart, $nextNewline - $analyticsStart + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove trackAnalytics calls and related analytics code (in proper order)
+        // Pattern 1: Remove the whole block of const direction + trackAnalytics FIRST (multi-line)
+        $js = preg_replace(
+            '/\s*const direction = [^;]+;\s*\n\s*trackAnalytics\s*\([^)]+\);\s*\n/',
+            "\n",
+            $js
+        );
+
+        // Pattern 2: Then remove standalone trackAnalytics(...); calls
+        $js = preg_replace('/\s*trackAnalytics\s*\([^)]+\);\s*\n/', "\n", $js);
+
+        // Pattern 3: Then remove orphaned const direction
+        $js = preg_replace('/\s*const direction = [^;]+;\s*\n/', '', $js);
+
+        // Remove "// Track" comment lines
+        $js = preg_replace('/\/\/ Track [a-z]+\s*\n/', '', $js);
+
+        // Cleanup leftover braces from arrow functions that had trackAnalytics removed
+        // Pattern: => { functionCall(); }; becomes => functionCall();
+        // Only match handlers with specific function names that were modified by trackAnalytics removal
+        $js = preg_replace(
+            '/=> *\{\s*((?:prevSlide|nextSlide|goToSlide)\s*\([^)]*\))\s*;\s*\};/',
+            '=> $1;',
+            $js
+        );
+        
+        // For minified code: handle arrow functions with trackAnalytics removed
+        // Pattern: const handlePrevClick=()=>{prevSlide()}; should become const handlePrevClick=()=>prevSlide();
+        // Pattern: const handleNextClick=()=>{nextSlide()}; should become const handleNextClick=()=>nextSlide();
+        $js = preg_replace(
+            '/const handlePrevClick=\(\)=>\{prevSlide\(\)\};/',
+            'const handlePrevClick=()=>prevSlide();',
+            $js
+        );
+        $js = preg_replace(
+            '/const handleNextClick=\(\)=>\{nextSlide\(\)\};/',
+            'const handleNextClick=()=>nextSlide();',
+            $js
+        );
+        
+        // Also handle handlers with trackAnalytics that were partially removed
+        // Pattern: const handlePrevClick=()=>{trackAnalytics(...);prevSlide()}; should become const handlePrevClick=()=>prevSlide();
+        $js = preg_replace(
+            '/const handlePrevClick=\(\)=>\{[^}]*prevSlide\(\)\};/',
+            'const handlePrevClick=()=>prevSlide();',
+            $js
+        );
+        $js = preg_replace(
+            '/const handleNextClick=\(\)=>\{[^}]*nextSlide\(\)\};/',
+            'const handleNextClick=()=>nextSlide();',
+            $js
+        );
+        
+        // Also handle handlers in dotHandlers: handler=()=>{goToSlide(index)}; should become handler=()=>goToSlide(index);
+        $js = preg_replace(
+            '/handler=\(\)=>\{goToSlide\(index\)\};/',
+            'handler=()=>goToSlide(index);',
+            $js
+        );
+
+        // Remove minified analytics code
+        $js = preg_replace('/const analyticsEnabled=false;/', '', $js);
+        $js = preg_replace('/const analyticsEndpoint="[^"]+";/', '', $js);
+
+        // For minified: Remove function trackAnalytics(...) {large block}
+        // Must find the parameter list close ) first, then find the brace after it
+        $analyticsFuncStart = strpos($js, 'function trackAnalytics(');
+        if ($analyticsFuncStart !== false) {
+            // Find the closing paren of the parameter list
+            $parenClose = strpos($js, ')', $analyticsFuncStart);
+            if ($parenClose !== false) {
+                // Find opening brace AFTER the parameter list
+                $bracePos = strpos($js, '{', $parenClose);
+                if ($bracePos !== false) {
+                    // Count braces to find the end of the function
+                    $braceCount = 1;
+                    $i = $bracePos + 1;
+                    $inString = false;
+                    $stringChar = '';
+
+                    while ($i < strlen($js) && $braceCount > 0) {
+                        $char = $js[$i];
+                        if (!$inString) {
+                            if (($char === '"' || $char === "'" || $char === '`') && ($i === 0 || $js[$i - 1] !== '\\')) {
+                                $inString = true;
+                                $stringChar = $char;
+                            } elseif ($char === '{') {
+                                $braceCount++;
+                            } elseif ($char === '}') {
+                                $braceCount--;
+                            }
+                        } elseif ($char === $stringChar && ($i === 0 || $js[$i - 1] !== '\\')) {
+                            $inString = false;
+                        }
+                        $i++;
+                    }
+
+                    // Remove the function
+                    $js = substr_replace($js, '', $analyticsFuncStart, $i - $analyticsFuncStart);
+                }
+            }
+        }
+
+        // Remove minified trackAnalytics calls - more careful to avoid partial matches
+        // Remove calls like: trackAnalytics(...); or trackAnalytics(...)
+        $js = preg_replace('/;?trackAnalytics\([^)]*\);/', '', $js);
+        // Also remove calls not ending in semicolon
+        $js = preg_replace('/trackAnalytics\([^)]*\)(?=[}])/', '', $js);
+        
+        // Normalize arrow functions after analytics removal
+        // Pattern: const handlePrevClick=()=>{prevSlide()}; becomes const handlePrevClick=()=>prevSlide();
+        $js = preg_replace(
+            '/const handlePrevClick=\(\)=>\{prevSlide\(\)\};/',
+            'const handlePrevClick=()=>prevSlide();',
+            $js
+        );
+        $js = preg_replace(
+            '/const handleNextClick=\(\)=>\{nextSlide\(\)\};/',
+            'const handleNextClick=()=>nextSlide();',
+            $js
+        );
+        
+        // Normalize handler in dotHandlers: handler=()=>{goToSlide(index)}; becomes handler=()=>goToSlide(index);
+        $js = preg_replace(
+            '/handler=\(\)=>\{goToSlide\(index\)\};/',
+            'handler=()=>goToSlide(index);',
+            $js
+        );
+        
+        // Fix handleSwipe: remove const direction=... that was left after analytics removal
+        // Pattern: const direction=diff>0?'next':'prev'if(diff>0) should become if(diff>0)
+        // In minified code, there's no semicolon: const direction=diff>0?'next':'prev'if(diff>0)
+        // We need to match up to 'if(' but not include it
+        $js = preg_replace(
+            '/const direction=diff>0\?[^i]+if\(/',
+            'if(',
+            $js
+        );
+        // Also handle with semicolon: const direction=...;if(
+        $js = preg_replace(
+            '/const direction=[^;]+;if\(/',
+            'if(',
+            $js
+        );
 
         // Remove virtualization variable declarations (non-minified)
         $js = preg_replace('/const virtualizationEnabled = [^;]+;\s*/', '', $js);
@@ -274,11 +554,12 @@ class JsRendererMigrationTest extends TestCase
         $this->assertNotEmpty($legacyMatches[1] ?? null, 'Legacy JS should contain carousel script');
         $this->assertNotEmpty($newMatches[1] ?? null, 'New JS should contain carousel script');
 
-        // Normalize: remove virtualization code (new feature, not in legacy renderer)
+        // Normalize both: legacy may have API included due to minification, new has virtualization code
+        $normalizedLegacy = $this->normalizeVirtualization($legacyMatches[1] ?? '');
         $normalizedNew = $this->normalizeVirtualization($newMatches[1] ?? '');
 
         // Normalize whitespace before comparison
-        $legacyCode = $this->normalizeWhitespace($legacyMatches[1] ?? '');
+        $legacyCode = $this->normalizeWhitespace($normalizedLegacy);
         $newCode = $this->normalizeWhitespace($normalizedNew);
 
         // Compare minified carousel scripts (they should be identical after normalization)

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace JulienLinard\Carousel;
 
+use JulienLinard\Carousel\Analytics\AnalyticsInterface;
 use JulienLinard\Carousel\Exception\InvalidCarouselTypeException;
 use JulienLinard\Carousel\Validator\IdSanitizer;
 use JulienLinard\Carousel\Validator\OptionsValidator;
@@ -27,6 +28,7 @@ class Carousel
     private array $items = [];
     private array $options = [];
     private ?\JulienLinard\Carousel\Renderer\CompositeRenderer $renderer = null;
+    private ?AnalyticsInterface $analyticsProvider = null;
 
     public function __construct(
         string $id,
@@ -56,6 +58,11 @@ class Carousel
         $defaultOptions = $this->getDefaultOptions();
         $validatedOptions = OptionsValidator::validate($options);
         $this->options = array_merge($defaultOptions, $validatedOptions);
+        
+        // Set analytics provider if provided
+        if (isset($options['analyticsProvider']) && $options['analyticsProvider'] instanceof AnalyticsInterface) {
+            $this->analyticsProvider = $options['analyticsProvider'];
+        }
     }
 
     /**
@@ -204,6 +211,23 @@ class Carousel
     public function getOptions(): array
     {
         return $this->options;
+    }
+
+    /**
+     * Get analytics provider
+     */
+    public function getAnalyticsProvider(): ?AnalyticsInterface
+    {
+        return $this->analyticsProvider;
+    }
+
+    /**
+     * Set analytics provider
+     */
+    public function setAnalyticsProvider(?AnalyticsInterface $provider): self
+    {
+        $this->analyticsProvider = $provider;
+        return $this;
     }
 
     /**
