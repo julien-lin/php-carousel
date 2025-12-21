@@ -391,6 +391,38 @@ class CssRenderer extends AbstractRenderer
     transform: translateY(-50%) scale(0.95);
 }
 
+/* Enhanced focus styles for accessibility (WCAG AAA) */
+{$cssId} .carousel-arrow:focus-visible {
+    outline: 3px solid var(--carousel-arrow, #333);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 1), 0 0 0 5px var(--carousel-arrow, #333);
+}
+
+{$cssId} .carousel-arrow:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Focus styles for dots */
+{$cssId} .carousel-dot:focus-visible {
+    outline: 3px solid var(--carousel-dot-active, rgba(0, 0, 0, 0.8));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 1), 0 0 0 5px var(--carousel-dot-active, rgba(0, 0, 0, 0.8));
+}
+
+{$cssId} .carousel-dot:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Focus styles for carousel container */
+{$cssId}:focus-visible {
+    outline: 3px solid var(--carousel-arrow, #333);
+    outline-offset: 2px;
+}
+
+{$cssId}:focus:not(:focus-visible) {
+    outline: none;
+}
+
 {$cssId} .carousel-arrow-prev {
     left: 16px;
 }
@@ -423,7 +455,8 @@ class CssRenderer extends AbstractRenderer
     transform: scale(1.2);
 }
 
-{$cssId} .carousel-dot.active {
+{$cssId} .carousel-dot.active,
+{$cssId} .carousel-dot[aria-selected="true"] {
     background: {$dotActive};
     width: 24px;
     border-radius: 6px;
