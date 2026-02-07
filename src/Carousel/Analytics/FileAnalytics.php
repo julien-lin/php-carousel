@@ -6,21 +6,105 @@ namespace JulienLinard\Carousel\Analytics;
 
 /**
  * File-based analytics implementation
- * 
- * Stores analytics data in JSON files
+ *
+ * Stores analytics data in JSON files.
+ * Path is validated to prevent directory traversal (path must be under an explicit base).
  */
 class FileAnalytics implements AnalyticsInterface
 {
     private string $storagePath;
 
-    public function __construct(string $storagePath)
+    /**
+     * @param string      $storagePath Path to the analytics storage directory (relative to $basePath if basePath is set)
+     * @param string|null $basePath    Optional base directory. If set, $storagePath must be relative and resolve under this base. If null, path must not contain '..'
+     * @throws \InvalidArgumentException If path is invalid or resolves outside the allowed base
+     */
+    public function __construct(string $storagePath, ?string $basePath = null)
     {
-        $this->storagePath = rtrim($storagePath, '/');
-        
-        // Create directory if it doesn't exist
-        if (!is_dir($this->storagePath)) {
-            mkdir($this->storagePath, 0755, true);
+        if ($basePath !== null) {
+            $this->storagePath = $this->resolvePathWithBase($storagePath, $basePath);
+        } else {
+            $this->storagePath = $this->resolvePathWithoutBase($storagePath);
         }
+
+        if (!is_dir($this->storagePath)) {
+            mkdir($this->storagePath, 0700, true);
+        }
+
+        $resolved = realpath($this->storagePath);
+        if ($resolved === false) {
+            throw new \InvalidArgumentException('Storage path could not be resolved after creation.');
+        }
+        $this->storagePath = $resolved;
+    }
+
+    /**
+     * Resolve path when an explicit base is provided (recommended for security).
+     */
+    private function resolvePathWithBase(string $storagePath, string $basePath): string
+    {
+        $baseReal = realpath($basePath);
+        if ($baseReal === false || !is_dir($baseReal)) {
+            throw new \InvalidArgumentException('Base path does not exist or is not a directory.');
+        }
+
+        $relative = $this->normalizeRelativePath($storagePath);
+        $intendedPath = rtrim($baseReal . '/' . $relative, '/');
+
+        if ($intendedPath !== $baseReal && !str_starts_with($intendedPath, $baseReal . '/')) {
+            throw new \InvalidArgumentException('Storage path must resolve under the base path.');
+        }
+
+        return $intendedPath;
+    }
+
+    /**
+     * Resolve path when no base is provided (reject traversal, use 0700).
+     */
+    private function resolvePathWithoutBase(string $storagePath): string
+    {
+        if (str_contains($storagePath, '..')) {
+            throw new \InvalidArgumentException('Storage path must not contain "..".');
+        }
+
+        $path = rtrim(str_replace('\\', '/', $storagePath), '/');
+        if ($path === '') {
+            throw new \InvalidArgumentException('Storage path cannot be empty.');
+        }
+
+        if ($path[0] !== '/') {
+            $cwd = getcwd();
+            $path = ($cwd !== false ? $cwd : sys_get_temp_dir()) . '/' . $path;
+        }
+
+        return $path;
+    }
+
+    /**
+     * Normalize relative path (remove ., .., duplicate slashes).
+     *
+     * @return string Path segments joined by /, no leading/trailing slash
+     */
+    private function normalizeRelativePath(string $path): string
+    {
+        $path = str_replace('\\', '/', trim($path, '/'));
+        if ($path === '') {
+            return 'carousel-analytics';
+        }
+        $parts = explode('/', $path);
+        $resolved = [];
+        foreach ($parts as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+            if ($segment === '..') {
+                array_pop($resolved);
+                continue;
+            }
+            $resolved[] = $segment;
+        }
+        $joined = implode('/', $resolved);
+        return $joined === '' ? 'carousel-analytics' : $joined;
     }
 
     /**

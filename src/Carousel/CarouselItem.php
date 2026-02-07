@@ -35,24 +35,60 @@ class CarouselItem
         $this->attributes = $this->sanitizeAttributes($attributes);
     }
     
+    /** @var list<string> Whitelist stricte des attributs autorisés (XSS) */
+    private const ALLOWED_ATTRIBUTES = [
+        'class',
+        'data-slide',
+        'data-content',
+        'data-id',
+        'aria-label',
+        'aria-describedby',
+        'aria-current',
+        'aria-hidden',
+        'aria-roledescription',
+        'aria-posinset',
+        'aria-setsize',
+    ];
+
     /**
-     * Sanitize custom attributes
-     * 
-     * @param array $attributes Attributes to sanitize
-     * @return array Sanitized attributes
+     * Sanitize custom attributes (whitelist + reject dangerous patterns)
+     *
+     * @param array<string, mixed> $attributes Attributes to sanitize
+     * @return array<string, string> Sanitized attributes
      */
     private function sanitizeAttributes(array $attributes): array
     {
         $sanitized = [];
-        
+
         foreach ($attributes as $key => $value) {
-            // Only allow safe attributes (class, data-*, aria-*)
-            if (preg_match('/^(class|data-|aria-)/', $key)) {
-                $sanitized[$key] = htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $key = (string) $key;
+
+            if (!self::isAllowedAttribute($key)) {
+                continue;
             }
+
+            $value = (string) $value;
+            if (self::isDangerousAttributeValue($value)) {
+                continue;
+            }
+
+            $sanitized[$key] = htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
-        
+
         return $sanitized;
+    }
+
+    private static function isAllowedAttribute(string $key): bool
+    {
+        if (in_array($key, self::ALLOWED_ATTRIBUTES, true)) {
+            return true;
+        }
+        return str_starts_with($key, 'aria-');
+    }
+
+    private static function isDangerousAttributeValue(string $value): bool
+    {
+        return preg_match('/^(on\w+|javascript\s*:|data\s*:\s*text\/html)/i', $value) === 1;
     }
 
     /**

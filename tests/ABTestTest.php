@@ -26,7 +26,9 @@ class ABTestTest extends TestCase
     {
         parent::tearDown();
         $_COOKIE = [];
-        
+        if (session_status() === \PHP_SESSION_ACTIVE && isset($_SESSION['carousel_variant_test-cookie'])) {
+            unset($_SESSION['carousel_variant_test-cookie']);
+        }
         if (is_dir($this->tempDir)) {
             $files = glob($this->tempDir . '/*');
             foreach ($files as $file) {
@@ -87,13 +89,15 @@ class ABTestTest extends TestCase
         $this->assertFalse($test->isVariantSelected($selected === 'variant_a' ? 'variant_b' : 'variant_a'));
     }
 
-    public function testCookieMethodUsesExistingCookie(): void
+    public function testCookieMethodUsesExistingSession(): void
     {
+        if (session_status() === \PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION['carousel_variant_test-cookie'] = 'variant_b';
+
         $carouselA = Carousel::image('test-a', ['image1.jpg']);
         $carouselB = Carousel::image('test-b', ['image2.jpg']);
-
-        // Set cookie
-        $_COOKIE['ab_test_test-cookie'] = 'variant_b';
 
         $test = new ABTest('test-cookie', [
             'variant_a' => ['carousel' => $carouselA, 'weight' => 50],

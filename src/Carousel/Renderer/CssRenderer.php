@@ -49,7 +49,7 @@ class CssRenderer extends AbstractRenderer
         }
         RenderCacheService::markAsRendered($id, 'html');
         
-        $cssId = '#carousel-' . $id;
+        $cssId = '#carousel-' . $this->escapeCssId($id);
         $gap = $options['gap'] ?? 16;
         $transitionDuration = ($options['transitionDuration'] ?? 500) . 'ms';
         
@@ -113,8 +113,19 @@ class CssRenderer extends AbstractRenderer
     }
 
     /**
+     * Escape ID for safe use in CSS selectors (prevent CSS injection).
+     * Escapes any character not in [a-zA-Z0-9_-] with backslash-hex.
+     */
+    private function escapeCssId(string $id): string
+    {
+        return preg_replace_callback('/[^a-zA-Z0-9_-]/', function (array $m): string {
+            return '\\' . dechex(ord($m[0])) . ' ';
+        }, $id);
+    }
+
+    /**
      * Get theme CSS variables
-     * 
+     *
      * @param string $cssId CSS selector ID
      * @param RenderContext $context Render context
      * @return string CSS output

@@ -324,7 +324,7 @@ class SecurityTest extends TestCase
     }
     
     /**
-     * Test attributes XSS prevention
+     * Test attributes XSS prevention (whitelist + value escaping)
      */
     public function testAttributesXssPrevention(): void
     {
@@ -332,15 +332,16 @@ class SecurityTest extends TestCase
             id: 'test',
             title: 'Test',
             attributes: [
-                'data-value' => '<script>alert(1)</script>',
+                'data-content' => '<script>alert(1)</script>',
             ]
         );
         
         $array = $item->toArray();
         
-        // Should escape HTML in attribute values
-        $this->assertStringNotContainsString('<script>', $array['attributes']['data-value']);
-        $this->assertStringContainsString('&lt;script&gt;', $array['attributes']['data-value']);
+        // Should escape HTML in attribute values (allowed attribute)
+        $this->assertArrayHasKey('data-content', $array['attributes']);
+        $this->assertStringNotContainsString('<script>', $array['attributes']['data-content']);
+        $this->assertStringContainsString('&lt;script&gt;', $array['attributes']['data-content']);
     }
 }
 

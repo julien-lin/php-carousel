@@ -28,6 +28,11 @@ class ABTest implements ABTestInterface
     public const METHOD_RANDOM = 'random';
     public const METHOD_HASH = 'hash';
 
+    private const SESSION_KEY_PREFIX = 'carousel_variant_';
+
+    /** Pattern pour valider l'identifiant de variante (sécurité) */
+    private const VARIANT_ID_PATTERN = '/^[a-zA-Z0-9_-]+$/';
+
     /**
      * Constructor
      * 
@@ -126,25 +131,56 @@ class ABTest implements ABTestInterface
     }
 
     /**
-     * Select variant based on method
+     * Select variant based on method.
+     * METHOD_COOKIE uses session (carousel_variant_{testId}) to avoid cookie manipulation.
      */
     private function selectVariant(): string
     {
-        // Try to get from cookie first (if method is cookie)
         if ($this->selectionMethod === self::METHOD_COOKIE) {
-            $cookieValue = $_COOKIE['ab_test_' . $this->testId] ?? null;
-            if ($cookieValue && isset($this->variants[$cookieValue])) {
-                return $cookieValue;
+            $stored = $this->getStoredVariantFromSession();
+            if ($stored !== null) {
+                return $stored;
             }
+            $variant = $this->selectByWeight();
+            $this->storeVariantInSession($variant);
+            return $variant;
         }
 
-        // Try hash-based selection for consistency
         if ($this->selectionMethod === self::METHOD_HASH && $this->userId !== null) {
             return $this->selectByHash();
         }
 
-        // Random selection based on weights
         return $this->selectByWeight();
+    }
+
+    private function ensureSessionStarted(): void
+    {
+        if (session_status() === \PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+
+    private function getStoredVariantFromSession(): ?string
+    {
+        $this->ensureSessionStarted();
+        $key = self::SESSION_KEY_PREFIX . $this->testId;
+        $value = $_SESSION[$key] ?? null;
+        if ($value === null || !is_string($value)) {
+            return null;
+        }
+        if (!preg_match(self::VARIANT_ID_PATTERN, $value)) {
+            return null;
+        }
+        if (!isset($this->variants[$value])) {
+            return null;
+        }
+        return $value;
+    }
+
+    private function storeVariantInSession(string $variantId): void
+    {
+        $this->ensureSessionStarted();
+        $_SESSION[self::SESSION_KEY_PREFIX . $this->testId] = $variantId;
     }
 
     /**
@@ -211,29 +247,18 @@ class ABTest implements ABTestInterface
     }
 
     /**
-     * Set cookie for variant (to be called in response)
-     * 
-     * @param int $expiryDays Cookie expiry in days (default: 30)
-     * @return void
+     * Persist variant for METHOD_COOKIE (session-based).
+     * No-op: variant is already stored in session in selectVariant().
+     * Kept for backward compatibility with code that calls setCookie() after rendering.
+     *
+     * @param int $expiryDays Ignored (session lifetime is controlled by PHP/app)
      */
     public function setCookie(int $expiryDays = 30): void
     {
         if ($this->selectionMethod !== self::METHOD_COOKIE) {
             return;
         }
-
-        $cookieName = 'ab_test_' . $this->testId;
-        $expiry = time() + ($expiryDays * 24 * 60 * 60);
-        
-        setcookie(
-            $cookieName,
-            $this->selectedVariant,
-            $expiry,
-            '/',
-            '',
-            false,
-            true // HttpOnly
-        );
+        // Variant is stored in session; no cookie is set (audit: avoid cookie manipulation)
     }
 
     /**
