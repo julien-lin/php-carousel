@@ -70,9 +70,9 @@ class Carousel
      */
     public function addItem(CarouselItem|array $item): self
     {
-        // Limit number of items to prevent DoS
-        if (count($this->items) >= 100) {
-            throw new \RuntimeException('Maximum 100 items allowed per carousel');
+        $maxItems = (int) ($this->options['maxItems'] ?? 100);
+        if (count($this->items) >= $maxItems) {
+            throw new \RuntimeException('Maximum ' . $maxItems . ' items allowed per carousel');
         }
         
         if (is_array($item)) {
@@ -316,6 +316,7 @@ class Carousel
             'itemsPerSlideTablet' => 1,
             'itemsPerSlideMobile' => 1,
             'gap' => 16,
+            'maxItems' => 100, // Limite d'items par carousel (1–10000, configurable via options)
             'theme' => 'auto', // auto, light, dark
             'themeColors' => null, // null = defaults, or ['light' => [...], 'dark' => [...]]
             'transition' => 'slide', // slide, fade, cube

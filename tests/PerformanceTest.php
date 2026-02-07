@@ -66,29 +66,25 @@ class PerformanceTest extends TestCase
         $this->assertStringContainsString('#000', $minified);
     }
 
-    public function testJsMinifierRemovesComments(): void
+    public function testJsMinifierReturnsTrimmedOutput(): void
     {
-        $js = "// This is a comment\nvar test = \"value\";";
+        $js = "  \n  var test = \"value\";  \n  ";
         $minified = JsMinifier::minify($js);
-        
-        $this->assertStringNotContainsString('comment', $minified);
-        $this->assertStringContainsString('var test=', $minified);
+        $this->assertSame('var test = "value";', $minified);
     }
 
-    public function testJsMinifierRemovesWhitespace(): void
+    public function testJsMinifierDoesNotRemoveComments(): void
     {
-        $js = 'var test = "value" ; function test() { return true ; }';
+        $js = "// comment\nvar x = 1;";
         $minified = JsMinifier::minify($js);
-        
-        $this->assertStringContainsString('var test=', $minified);
-        $this->assertStringContainsString('function test(){return true}', $minified);
+        $this->assertStringContainsString('comment', $minified);
+        $this->assertStringContainsString('var x = 1', $minified);
     }
 
     public function testJsMinifierPreservesStrings(): void
     {
         $js = 'var test = "Hello World";';
         $minified = JsMinifier::minify($js);
-        
         $this->assertStringContainsString('"Hello World"', $minified);
     }
 

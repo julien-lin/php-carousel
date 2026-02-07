@@ -67,6 +67,17 @@ class OptionsValidator
             }
             $validated['gap'] = $gap;
         }
+
+        // Max items per carousel (DoS)
+        if (isset($options['maxItems'])) {
+            $maxItems = (int) $options['maxItems'];
+            if ($maxItems < 1 || $maxItems > 10000) {
+                throw new InvalidArgumentException(
+                    'maxItems must be between 1 and 10000'
+                );
+            }
+            $validated['maxItems'] = $maxItems;
+        }
         
         // Transition type
         if (isset($options['transition'])) {

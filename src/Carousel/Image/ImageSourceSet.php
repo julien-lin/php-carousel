@@ -9,6 +9,12 @@ namespace JulienLinard\Carousel\Image;
  */
 class ImageSourceSet
 {
+    /** Longueur max d'un srcset (DoS / perf) */
+    private const MAX_SRCSET_LENGTH = 5000;
+
+    /** Pattern basique : URL avec extension image optionnelle + descripteur optionnel (400w, 2x) */
+    private const SRCSET_PART_PATTERN = '/^[^\s,]+\.(webp|avif|jpe?g|png|gif|svg)(\s+\d+[wx])?$/i';
+
     private array $sources = [];
     private string $fallback;
     private array $formats = ['webp', 'avif', 'jpg'];
@@ -22,20 +28,45 @@ class ImageSourceSet
 
     /**
      * Add a source with srcset
-     * 
-     * @param string $srcset Source set (e.g., "image-400w.webp 400w, image-800w.webp 800w")
-     * @param string|null $media Media query (e.g., "(max-width: 400px)")
-     * @param string|null $type MIME type (e.g., "image/webp")
+     *
+     * @param string      $srcset Source set (e.g., "image-400w.webp 400w, image-800w.webp 800w")
+     * @param string|null $media  Media query (e.g., "(max-width: 400px)")
+     * @param string|null $type   MIME type (e.g., "image/webp")
      * @return self
+     * @throws \InvalidArgumentException If srcset too long or format invalid
      */
     public function addSource(string $srcset, ?string $media = null, ?string $type = null): self
     {
+        $srcset = trim($srcset);
+        if (strlen($srcset) > self::MAX_SRCSET_LENGTH) {
+            throw new \InvalidArgumentException('srcset must not exceed ' . self::MAX_SRCSET_LENGTH . ' characters');
+        }
+        if ($srcset !== '' && !$this->isValidSrcsetFormat($srcset)) {
+            throw new \InvalidArgumentException('srcset must contain valid image URLs with optional width/descriptor (e.g. image.webp 400w)');
+        }
         $this->sources[] = [
             'srcset' => $srcset,
             'media' => $media,
             'type' => $type,
         ];
         return $this;
+    }
+
+    /**
+     * Vérifie que le srcset ressemble à une liste d'URLs image (extension + optionnel \d+w ou \d+x).
+     */
+    private function isValidSrcsetFormat(string $srcset): bool
+    {
+        $parts = array_map('trim', explode(',', $srcset));
+        foreach ($parts as $part) {
+            if ($part === '') {
+                return false;
+            }
+            if (preg_match(self::SRCSET_PART_PATTERN, $part) !== 1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
