@@ -26,6 +26,12 @@ class FileAnalytics implements AnalyticsInterface
     /** Taille max en lecture pour éviter de charger un fichier géant (10 Mo) */
     private const MAX_READ_BYTES = 10 * 1024 * 1024;
 
+    /** Nombre max d'événements par carousel par minute (rate limiting DoS) */
+    private const MAX_EVENTS_PER_MINUTE = 100;
+
+    /** @var array<string, int> Compteur par clé "carouselId:minute" */
+    private array $eventCounts = [];
+
     /**
      * @param string      $storagePath Path to the analytics storage directory (relative to $basePath if basePath is set)
      * @param string|null $basePath    Optional base directory. If set, $storagePath must be relative and resolve under this base. If null, path must not contain '..'
@@ -120,10 +126,25 @@ class FileAnalytics implements AnalyticsInterface
     }
 
     /**
+     * Vérifie le rate limit (max événements par carousel par minute).
+     * Retourne false si la limite est dépassée (événement ignoré).
+     */
+    private function checkRateLimit(string $carouselId): bool
+    {
+        $minute = (int) floor(time() / 60);
+        $key = $carouselId . ':' . $minute;
+        $this->eventCounts[$key] = ($this->eventCounts[$key] ?? 0) + 1;
+        return $this->eventCounts[$key] <= self::MAX_EVENTS_PER_MINUTE;
+    }
+
+    /**
      * Track carousel impression
      */
     public function trackImpression(string $carouselId, int $slideIndex): void
     {
+        if (!$this->checkRateLimit($carouselId)) {
+            return;
+        }
         $this->log([
             'event' => 'impression',
             'carousel_id' => $carouselId,
@@ -137,6 +158,9 @@ class FileAnalytics implements AnalyticsInterface
      */
     public function trackClick(string $carouselId, int $slideIndex, ?string $url = null): void
     {
+        if (!$this->checkRateLimit($carouselId)) {
+            return;
+        }
         $this->log([
             'event' => 'click',
             'carousel_id' => $carouselId,
@@ -151,6 +175,9 @@ class FileAnalytics implements AnalyticsInterface
      */
     public function trackInteraction(string $carouselId, string $event, array $data = []): void
     {
+        if (!$this->checkRateLimit($carouselId)) {
+            return;
+        }
         $this->log([
             'event' => 'interaction',
             'carousel_id' => $carouselId,
