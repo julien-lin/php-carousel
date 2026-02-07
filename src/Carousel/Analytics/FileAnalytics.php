@@ -242,7 +242,29 @@ class FileAnalytics implements AnalyticsInterface
     }
 
     /**
-     * Log event to file (with size and entry limits to prevent DoS).
+     * Lecture d'un fichier sous verrou partagé (évite de lire pendant un write).
+     */
+    private function readFileWithLock(string $file): string
+    {
+        $fp = fopen($file, 'r');
+        if ($fp === false) {
+            return '';
+        }
+        try {
+            if (!flock($fp, \LOCK_SH)) {
+                return '';
+            }
+            $size = filesize($file);
+            $length = $size > 0 ? (int) min($size, self::MAX_READ_BYTES) : 0;
+            return $length > 0 ? fread($fp, $length) : '';
+        } finally {
+            flock($fp, \LOCK_UN);
+            fclose($fp);
+        }
+    }
+
+    /**
+     * Log event to file (with size/entry limits and flock to avoid race conditions).
      */
     private function log(array $data): void
     {
@@ -253,19 +275,33 @@ class FileAnalytics implements AnalyticsInterface
             throw new \RuntimeException('Analytics log file size limit exceeded for ' . $date);
         }
 
-        $logs = [];
-        if (file_exists($file)) {
-            $content = file_get_contents($file, false, null, 0, self::MAX_READ_BYTES);
+        $fp = fopen($file, 'c+');
+        if ($fp === false) {
+            return;
+        }
+
+        try {
+            if (!flock($fp, \LOCK_EX)) {
+                return;
+            }
+
+            $size = filesize($file);
+            $content = $size > 0 ? fread($fp, (int) min($size, self::MAX_READ_BYTES)) : '';
             $logs = json_decode($content, true) ?: [];
+            $logs[] = $data;
+
+            if (count($logs) > self::MAX_ENTRIES) {
+                $logs = array_slice($logs, -self::KEEP_ENTRIES_AFTER_ROTATION);
+            }
+
+            $json = json_encode($logs, JSON_PRETTY_PRINT);
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, $json);
+        } finally {
+            flock($fp, \LOCK_UN);
+            fclose($fp);
         }
-
-        $logs[] = $data;
-
-        if (count($logs) > self::MAX_ENTRIES) {
-            $logs = array_slice($logs, -self::KEEP_ENTRIES_AFTER_ROTATION);
-        }
-
-        file_put_contents($file, json_encode($logs, JSON_PRETTY_PRINT));
     }
 
     /**
@@ -285,7 +321,7 @@ class FileAnalytics implements AnalyticsInterface
             $file = $this->storagePath . '/analytics-' . $date . '.json';
             
             if (file_exists($file)) {
-                $content = file_get_contents($file, false, null, 0, self::MAX_READ_BYTES);
+                $content = $this->readFileWithLock($file);
                 $logs = json_decode($content, true) ?: [];
 
                 // Filter by carousel ID
