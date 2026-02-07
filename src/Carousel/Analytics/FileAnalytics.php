@@ -14,6 +14,18 @@ class FileAnalytics implements AnalyticsInterface
 {
     private string $storagePath;
 
+    /** Taille max par fichier journalier (100 Mo) */
+    private const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
+
+    /** Nombre max d'entrées en mémoire avant rotation (garder les N dernières) */
+    private const MAX_ENTRIES = 100_000;
+
+    /** Nombre d'entrées à conserver après rotation */
+    private const KEEP_ENTRIES_AFTER_ROTATION = 50_000;
+
+    /** Taille max en lecture pour éviter de charger un fichier géant (10 Mo) */
+    private const MAX_READ_BYTES = 10 * 1024 * 1024;
+
     /**
      * @param string      $storagePath Path to the analytics storage directory (relative to $basePath if basePath is set)
      * @param string|null $basePath    Optional base directory. If set, $storagePath must be relative and resolve under this base. If null, path must not contain '..'
@@ -203,21 +215,29 @@ class FileAnalytics implements AnalyticsInterface
     }
 
     /**
-     * Log event to file
+     * Log event to file (with size and entry limits to prevent DoS).
      */
     private function log(array $data): void
     {
         $date = date('Y-m-d');
         $file = $this->storagePath . '/analytics-' . $date . '.json';
-        
+
+        if (file_exists($file) && filesize($file) > self::MAX_FILE_SIZE_BYTES) {
+            throw new \RuntimeException('Analytics log file size limit exceeded for ' . $date);
+        }
+
         $logs = [];
         if (file_exists($file)) {
-            $content = file_get_contents($file);
+            $content = file_get_contents($file, false, null, 0, self::MAX_READ_BYTES);
             $logs = json_decode($content, true) ?: [];
         }
-        
+
         $logs[] = $data;
-        
+
+        if (count($logs) > self::MAX_ENTRIES) {
+            $logs = array_slice($logs, -self::KEEP_ENTRIES_AFTER_ROTATION);
+        }
+
         file_put_contents($file, json_encode($logs, JSON_PRETTY_PRINT));
     }
 
@@ -238,9 +258,9 @@ class FileAnalytics implements AnalyticsInterface
             $file = $this->storagePath . '/analytics-' . $date . '.json';
             
             if (file_exists($file)) {
-                $content = file_get_contents($file);
+                $content = file_get_contents($file, false, null, 0, self::MAX_READ_BYTES);
                 $logs = json_decode($content, true) ?: [];
-                
+
                 // Filter by carousel ID
                 $filtered = array_filter($logs, fn($log) => ($log['carousel_id'] ?? '') === $carouselId);
                 $allLogs = array_merge($allLogs, $filtered);
