@@ -13,6 +13,11 @@ class Theme
     public const MODE_LIGHT = 'light';
     public const MODE_DARK = 'dark';
 
+    /** Formats de couleur autorisés (évite injection CSS) */
+    private const SAFE_COLOR_HEX = '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/';
+    private const SAFE_COLOR_RGB = '/^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/';
+    private const SAFE_COLOR_RGBA = '/^rgba\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*[\d.]+\s*\)$/';
+
     private string $mode;
     private array $lightColors;
     private array $darkColors;
@@ -67,8 +72,40 @@ class Theme
         ?array $darkColors = null
     ) {
         $this->mode = $this->validateMode($mode);
-        $this->lightColors = array_merge(self::DEFAULT_LIGHT_COLORS, $lightColors ?? []);
-        $this->darkColors = array_merge(self::DEFAULT_DARK_COLORS, $darkColors ?? []);
+        $this->lightColors = array_merge(self::DEFAULT_LIGHT_COLORS, $this->sanitizeColorMap($lightColors ?? [], self::DEFAULT_LIGHT_COLORS));
+        $this->darkColors = array_merge(self::DEFAULT_DARK_COLORS, $this->sanitizeColorMap($darkColors ?? [], self::DEFAULT_DARK_COLORS));
+    }
+
+    /**
+     * Garde uniquement les clés connues avec des valeurs couleur sûres (hex, rgb, rgba).
+     */
+    private function sanitizeColorMap(array $input, array $defaults): array
+    {
+        $out = [];
+        foreach ($input as $key => $value) {
+            if (!isset($defaults[$key]) || !is_string($value)) {
+                continue;
+            }
+            $value = trim($value);
+            if ($value !== '' && self::isSafeColorValue($value)) {
+                $out[$key] = $value;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Vérifie qu'une valeur est un format couleur CSS sûr (pas d'injection).
+     */
+    public static function isSafeColorValue(string $value): bool
+    {
+        $value = trim($value);
+        if ($value === 'transparent' || $value === 'currentColor') {
+            return true;
+        }
+        return preg_match(self::SAFE_COLOR_HEX, $value) === 1
+            || preg_match(self::SAFE_COLOR_RGB, $value) === 1
+            || preg_match(self::SAFE_COLOR_RGBA, $value) === 1;
     }
 
     /**
