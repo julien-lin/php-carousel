@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use JulienLinard\Carousel\Carousel;
 use JulienLinard\Carousel\CarouselItem;
 use JulienLinard\Carousel\Exception\InvalidCarouselTypeException;
+use JulienLinard\Carousel\Validator\UrlValidator;
+use JulienLinard\Carousel\Theme\Theme;
+use JulienLinard\Carousel\Analytics\FileAnalytics;
 use InvalidArgumentException;
 
 class SecurityTest extends TestCase
@@ -342,6 +345,36 @@ class SecurityTest extends TestCase
         $this->assertArrayHasKey('data-content', $array['attributes']);
         $this->assertStringNotContainsString('<script>', $array['attributes']['data-content']);
         $this->assertStringContainsString('&lt;script&gt;', $array['attributes']['data-content']);
+    }
+
+    public function testUrlValidatorRejectsProtocolRelative(): void
+    {
+        $this->assertFalse(UrlValidator::isSafe('//evil.com/phishing'));
+        $this->assertSame('#', UrlValidator::sanitize('//evil.com'));
+    }
+
+    public function testUrlValidatorRejectsDangerousSchemes(): void
+    {
+        $this->assertFalse(UrlValidator::isSafe('ftp://example.com'));
+        $this->assertFalse(UrlValidator::isSafe('ws://example.com'));
+        $this->assertFalse(UrlValidator::isSafe('wss://example.com'));
+        $this->assertSame('#', UrlValidator::sanitize('javascript:alert(1)'));
+    }
+
+    public function testThemeRejectsUnsafeColorValue(): void
+    {
+        $this->assertFalse(Theme::isSafeColorValue('"); } body { background: url("//evil.com"); } /*'));
+        $this->assertFalse(Theme::isSafeColorValue('<script>'));
+        $this->assertTrue(Theme::isSafeColorValue('#fff'));
+        $this->assertTrue(Theme::isSafeColorValue('rgb(255, 0, 0)'));
+        $this->assertTrue(Theme::isSafeColorValue('rgba(0, 0, 0, 0.5)'));
+    }
+
+    public function testFileAnalyticsRejectsPathTraversal(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('must not contain');
+        new FileAnalytics('../../../etc/passwd');
     }
 }
 

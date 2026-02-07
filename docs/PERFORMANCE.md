@@ -154,14 +154,16 @@ echo $html;
 
 See also [Cache and HTTP headers](CACHE_AND_HEADERS.md): the library does not send headers; your app should set Cache-Control and ETag when serving responses.
 
-## Lazy Loading
+## Lazy Loading and Preload
 
-Images are lazy-loaded by default using Intersection Observer:
+Images are lazy-loaded by default using Intersection Observer (`loading="lazy"`, `data-src`). The carousel JavaScript is compatible with this: no conflict with lazy loading.
 
 - ✅ Images load only when visible
 - ✅ Reduces initial page load time
 - ✅ Respects `prefers-reduced-motion`
 - ✅ Fallback for browsers without Intersection Observer
+
+For critical above-the-fold images, use `PerformanceOptimizer::generatePreloadLinks($carousel)` and output the returned `<link rel="preload" as="image">` tags in your `<head>`.
 
 ## Virtualization
 
@@ -217,6 +219,14 @@ $carousel = Carousel::image('gallery', $manyImages, [
    - Serve images from CDN
    - Use responsive images with `srcset`
    - Optimize image formats (WebP, AVIF)
+
+6. **Optional PSR-3 logging:** If you use `psr/log`, inject a logger into `FileAnalytics` to capture errors (e.g. file size exceeded, lock failure):
+   ```php
+   $analytics = new FileAnalytics($storagePath, $basePath);
+   if (interface_exists('Psr\Log\LoggerInterface')) {
+       $analytics->setLogger($yourLogger);
+   }
+   ```
 
 ## Performance Metrics
 

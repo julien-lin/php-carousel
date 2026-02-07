@@ -37,6 +37,26 @@ class FileAnalytics implements AnalyticsInterface
 
     private const FLUSH_THRESHOLD = 50;
 
+    /** Logger PSR-3 optionnel (si psr/log installé) */
+    private $logger = null;
+
+    /**
+     * Injecte un logger PSR-3 optionnel (erreurs / événements critiques).
+     *
+     * @param object|null $logger Instance de \Psr\Log\LoggerInterface (éviter dépendance requise)
+     */
+    public function setLogger(?object $logger): void
+    {
+        $this->logger = $logger;
+    }
+
+    private function logError(string $message, array $context = []): void
+    {
+        if ($this->logger !== null && method_exists($this->logger, 'error')) {
+            $this->logger->error($message, $context);
+        }
+    }
+
     /**
      * @param string      $storagePath Path to the analytics storage directory (relative to $basePath if basePath is set)
      * @param string|null $basePath    Optional base directory. If set, $storagePath must be relative and resolve under this base. If null, path must not contain '..'
@@ -307,16 +327,19 @@ class FileAnalytics implements AnalyticsInterface
         $file = $this->storagePath . '/analytics-' . $date . '.json';
 
         if (file_exists($file) && filesize($file) > self::MAX_FILE_SIZE_BYTES) {
+            $this->logError('Analytics log file size limit exceeded', ['file' => $file]);
             return;
         }
 
         $fp = fopen($file, 'c+');
         if ($fp === false) {
+            $this->logError('Analytics: failed to open file', ['file' => $file]);
             return;
         }
 
         try {
             if (!flock($fp, \LOCK_EX)) {
+                $this->logError('Analytics: failed to lock file', ['file' => $file]);
                 return;
             }
 

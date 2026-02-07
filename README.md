@@ -166,6 +166,7 @@ Advanced gallery with thumbnail navigation for easy browsing.
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
 ### Advanced Topics
+- [Security policy and best practices](SECURITY.md) - Reporting vulnerabilities, secure usage
 - [Accessibility Guide](docs/ACCESSIBILITY.md) - WCAG 2.1 AAA compliance
 - [Performance Guide](docs/PERFORMANCE.md) - Optimization techniques
 - [Cache and HTTP headers](docs/CACHE_AND_HEADERS.md) - Cache-Control, ETag (app responsibility)
@@ -745,6 +746,7 @@ See [INTEGRATION_BLADE.md](docs/INTEGRATION_BLADE.md) for complete documentation
 
 ```bash
 composer test
+composer audit   # Check for known dependency vulnerabilities (run before release)
 ```
 
 **Test Coverage:**
