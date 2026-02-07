@@ -124,6 +124,36 @@ The `RenderCacheService` ensures CSS and JS are rendered only once per carousel:
 
 **Automatic:** The cache is managed automatically by the renderer.
 
+### Persistent cache (optional)
+
+For high traffic or multi-instance setups, you can cache rendered output (HTML/CSS/JS) in a persistent store (file, Redis, PSR-6). Implement `JulienLinard\Carousel\Performance\RenderCacheInterface`:
+
+```php
+use JulienLinard\Carousel\Performance\RenderCacheInterface;
+
+class MyCache implements RenderCacheInterface {
+    public function get(string $key): ?string { /* ... */ }
+    public function set(string $key, string $value, int $ttl = 3600): void { /* ... */ }
+    public function delete(string $key): void { /* ... */ }
+}
+```
+
+Usage before rendering:
+
+```php
+$key = 'carousel_' . $carousel->getId() . '_html';
+$cached = $cache->get($key);
+if ($cached !== null) {
+    echo $cached;
+    return;
+}
+$html = $carousel->render();
+$cache->set($key, $html, 3600);
+echo $html;
+```
+
+See also [Cache and HTTP headers](CACHE_AND_HEADERS.md): the library does not send headers; your app should set Cache-Control and ETag when serving responses.
+
 ## Lazy Loading
 
 Images are lazy-loaded by default using Intersection Observer:

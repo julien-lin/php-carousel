@@ -36,10 +36,11 @@ class AnalyticsTest extends TestCase
     {
         $analytics = new FileAnalytics($this->tempDir);
         $analytics->trackImpression('test-carousel', 0);
-        
+        $analytics->flush();
+
         $date = date('Y-m-d');
         $file = $this->tempDir . '/analytics-' . $date . '.json';
-        
+
         $this->assertFileExists($file);
         
         $logs = json_decode(file_get_contents($file), true);
@@ -53,10 +54,11 @@ class AnalyticsTest extends TestCase
     {
         $analytics = new FileAnalytics($this->tempDir);
         $analytics->trackClick('test-carousel', 2, 'https://example.com');
-        
+        $analytics->flush();
+
         $date = date('Y-m-d');
         $file = $this->tempDir . '/analytics-' . $date . '.json';
-        
+
         $logs = json_decode(file_get_contents($file), true);
         $this->assertCount(1, $logs);
         $this->assertEquals('click', $logs[0]['event']);
@@ -69,10 +71,11 @@ class AnalyticsTest extends TestCase
     {
         $analytics = new FileAnalytics($this->tempDir);
         $analytics->trackInteraction('test-carousel', 'arrow_click', ['direction' => 'next']);
-        
+        $analytics->flush();
+
         $date = date('Y-m-d');
         $file = $this->tempDir . '/analytics-' . $date . '.json';
-        
+
         $logs = json_decode(file_get_contents($file), true);
         $this->assertCount(1, $logs);
         $this->assertEquals('interaction', $logs[0]['event']);
@@ -91,7 +94,8 @@ class AnalyticsTest extends TestCase
         $analytics->trackImpression('test-carousel', 0);
         $analytics->trackClick('test-carousel', 0, 'https://example.com');
         $analytics->trackInteraction('test-carousel', 'arrow_click', ['direction' => 'next']);
-        
+        $analytics->flush();
+
         $report = $analytics->getReport('test-carousel');
         
         $this->assertEquals('test-carousel', $report['carousel_id']);
@@ -107,7 +111,8 @@ class AnalyticsTest extends TestCase
         $analytics = new FileAnalytics($this->tempDir);
         
         $analytics->trackImpression('test-carousel', 0);
-        
+        $analytics->flush();
+
         $startDate = new \DateTime('-7 days');
         $endDate = new \DateTime('now');
         
@@ -125,7 +130,8 @@ class AnalyticsTest extends TestCase
         $analytics->trackImpression('carousel-1', 0);
         $analytics->trackImpression('carousel-2', 0);
         $analytics->trackImpression('carousel-1', 1);
-        
+        $analytics->flush();
+
         $report = $analytics->getReport('carousel-1');
         
         $this->assertEquals(2, $report['total_impressions']);
@@ -138,10 +144,11 @@ class AnalyticsTest extends TestCase
         $analytics->trackImpression('test', 0);
         $analytics->trackClick('test', 0);
         $analytics->trackInteraction('test', 'swipe');
-        
+        $analytics->flush();
+
         $date = date('Y-m-d');
         $file = $this->tempDir . '/analytics-' . $date . '.json';
-        
+
         $logs = json_decode(file_get_contents($file), true);
         $this->assertCount(3, $logs);
     }

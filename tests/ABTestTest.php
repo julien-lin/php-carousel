@@ -216,6 +216,7 @@ class ABTestTest extends TestCase
         $analytics->trackImpression('test-a', 0);
         $analytics->trackClick('test-a', 0, 'https://example.com');
         $analytics->trackImpression('test-b', 0);
+        $analytics->flush();
 
         $stats = $test->getVariantStats();
 

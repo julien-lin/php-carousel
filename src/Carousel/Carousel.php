@@ -290,12 +290,19 @@ class Carousel
         // Create carousel
         $options = $config['options'] ?? [];
         $carousel = new self($config['id'], $config['type'], $options);
-        
-        // Add items if provided
+
         if (isset($config['items']) && is_array($config['items'])) {
+            if (count($config['items']) > 1000) {
+                throw new \InvalidArgumentException('Too many items in configuration (max 1000)');
+            }
+            foreach ($config['items'] as $index => $item) {
+                if (!is_array($item)) {
+                    throw new \InvalidArgumentException('Configuration item at index ' . $index . ' must be an array');
+                }
+            }
             $carousel->addItems($config['items']);
         }
-        
+
         return $carousel;
     }
 

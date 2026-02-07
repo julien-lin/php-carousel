@@ -168,6 +168,7 @@ Advanced gallery with thumbnail navigation for easy browsing.
 ### Advanced Topics
 - [Accessibility Guide](docs/ACCESSIBILITY.md) - WCAG 2.1 AAA compliance
 - [Performance Guide](docs/PERFORMANCE.md) - Optimization techniques
+- [Cache and HTTP headers](docs/CACHE_AND_HEADERS.md) - Cache-Control, ETag (app responsibility)
 - [E2E Testing](docs/E2E_TESTING.md) - End-to-end testing guide
 
 ### Integration Guides

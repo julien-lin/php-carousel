@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace JulienLinard\Carousel\Renderer;
 
+use JulienLinard\Carousel\Performance\RenderCacheInterface;
+
 /**
  * Service to manage rendering cache
- * Centralizes the static cache previously in CarouselRenderer
+ * Centralizes the static cache previously in CarouselRenderer.
+ * Optionally delegates to a persistent cache (RenderCacheInterface) when set.
  */
 class RenderCacheService
 {
     private static array $renderedCarousels = [];
+
+    private static ?RenderCacheInterface $persistentCache = null;
+
+    private static int $defaultTtl = 3600;
 
     /**
      * Check if a carousel has already been rendered
@@ -39,9 +46,42 @@ class RenderCacheService
     }
 
     /**
-     * Clear the entire cache
-     * 
-     * @return void
+     * Set optional persistent cache (file, Redis, PSR-6). When set, CSS/HTML/JS can be stored and retrieved across requests.
+     */
+    public static function setPersistentCache(?RenderCacheInterface $cache, int $defaultTtl = 3600): void
+    {
+        self::$persistentCache = $cache;
+        self::$defaultTtl = $defaultTtl;
+    }
+
+    /**
+     * Get cached content from persistent cache (if configured).
+     *
+     * @return string|null Cached content or null
+     */
+    public static function getCachedContent(string $id, string $type = 'html'): ?string
+    {
+        if (self::$persistentCache === null) {
+            return null;
+        }
+        $key = 'carousel_' . self::getCacheKey($id, $type);
+        return self::$persistentCache->get($key);
+    }
+
+    /**
+     * Store content in persistent cache (if configured).
+     */
+    public static function setCachedContent(string $id, string $type, string $content, ?int $ttl = null): void
+    {
+        if (self::$persistentCache === null) {
+            return;
+        }
+        $key = 'carousel_' . self::getCacheKey($id, $type);
+        self::$persistentCache->set($key, $content, $ttl ?? self::$defaultTtl);
+    }
+
+    /**
+     * Clear the entire in-memory cache (does not clear persistent cache).
      */
     public static function clear(): void
     {

@@ -160,6 +160,7 @@ Galerie avancée avec navigation par miniatures pour une navigation facile.
 ## 📖 Documentation
 
 - [Référence API](docs/API.md) - Documentation API complète
+- [Cache et en-têtes HTTP](docs/CACHE_AND_HEADERS.md) - Cache-Control, ETag (responsabilité de l'app)
 - [Intégration CMS](docs/INTEGRATION_CMS.md) - WordPress, PrestaShop, Drupal
 - [Intégration Twig](docs/INTEGRATION_TWIG.md) - Moteur de template Twig
 - [Intégration Blade](docs/INTEGRATION_BLADE.md) - Template Laravel Blade

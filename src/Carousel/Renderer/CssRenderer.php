@@ -42,13 +42,18 @@ class CssRenderer extends AbstractRenderer
         $id = $context->getId();
         $options = $context->getOptions();
         $type = $context->getType();
-        
-        // Only render CSS once per carousel ID
+
+        $cached = RenderCacheService::getCachedContent($id, 'css');
+        if ($cached !== null && $cached !== '') {
+            return $cached;
+        }
+
+        // Only render CSS once per carousel ID (in-memory, same request)
         if (RenderCacheService::isRendered($id, 'html')) {
             return '';
         }
         RenderCacheService::markAsRendered($id, 'html');
-        
+
         $cssId = '#carousel-' . $this->escapeCssId($id);
         $gap = $options['gap'] ?? 16;
         $transitionDuration = ($options['transitionDuration'] ?? 500) . 'ms';
@@ -98,17 +103,17 @@ class CssRenderer extends AbstractRenderer
         }
         
         $css .= '</style>';
-        
+
         // Minify CSS if option is enabled
         $minify = $options['minify'] ?? false;
         if ($minify) {
-            // Extract CSS content (between <style> tags)
             $cssContent = preg_replace('/<style[^>]*>/', '', $css);
             $cssContent = preg_replace('/<\/style>/', '', $cssContent);
             $minified = CssMinifier::minify($cssContent);
             $css = '<style id="carousel-style-' . $this->escape($id) . '">' . $minified . '</style>';
         }
-        
+
+        RenderCacheService::setCachedContent($id, 'css', $css);
         return $css;
     }
 

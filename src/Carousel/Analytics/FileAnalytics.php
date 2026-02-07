@@ -32,6 +32,11 @@ class FileAnalytics implements AnalyticsInterface
     /** @var array<string, int> Compteur par clé "carouselId:minute" */
     private array $eventCounts = [];
 
+    /** Buffer d'événements avant écriture (réduit I/O) */
+    private array $buffer = [];
+
+    private const FLUSH_THRESHOLD = 50;
+
     /**
      * @param string      $storagePath Path to the analytics storage directory (relative to $basePath if basePath is set)
      * @param string|null $basePath    Optional base directory. If set, $storagePath must be relative and resolve under this base. If null, path must not contain '..'
@@ -145,12 +150,15 @@ class FileAnalytics implements AnalyticsInterface
         if (!$this->checkRateLimit($carouselId)) {
             return;
         }
-        $this->log([
+        $this->buffer[] = [
             'event' => 'impression',
             'carousel_id' => $carouselId,
             'slide_index' => $slideIndex,
             'timestamp' => time(),
-        ]);
+        ];
+        if (count($this->buffer) >= self::FLUSH_THRESHOLD) {
+            $this->flush();
+        }
     }
 
     /**
@@ -161,13 +169,16 @@ class FileAnalytics implements AnalyticsInterface
         if (!$this->checkRateLimit($carouselId)) {
             return;
         }
-        $this->log([
+        $this->buffer[] = [
             'event' => 'click',
             'carousel_id' => $carouselId,
             'slide_index' => $slideIndex,
             'url' => $url,
             'timestamp' => time(),
-        ]);
+        ];
+        if (count($this->buffer) >= self::FLUSH_THRESHOLD) {
+            $this->flush();
+        }
     }
 
     /**
@@ -178,13 +189,34 @@ class FileAnalytics implements AnalyticsInterface
         if (!$this->checkRateLimit($carouselId)) {
             return;
         }
-        $this->log([
+        $this->buffer[] = [
             'event' => 'interaction',
             'carousel_id' => $carouselId,
             'interaction_type' => $event,
             'data' => $data,
             'timestamp' => time(),
-        ]);
+        ];
+        if (count($this->buffer) >= self::FLUSH_THRESHOLD) {
+            $this->flush();
+        }
+    }
+
+    public function __destruct()
+    {
+        $this->flush();
+    }
+
+    /**
+     * Écrit le buffer en fichier puis le vide (un seul read-modify-write).
+     */
+    public function flush(): void
+    {
+        if (empty($this->buffer)) {
+            return;
+        }
+        $batch = $this->buffer;
+        $this->buffer = [];
+        $this->writeBatch($batch);
     }
 
     /**
@@ -264,15 +296,18 @@ class FileAnalytics implements AnalyticsInterface
     }
 
     /**
-     * Log event to file (with size/entry limits and flock to avoid race conditions).
+     * Écrit un lot d'événements en une seule opération (lock, read, merge, write).
      */
-    private function log(array $data): void
+    private function writeBatch(array $events): void
     {
+        if (empty($events)) {
+            return;
+        }
         $date = date('Y-m-d');
         $file = $this->storagePath . '/analytics-' . $date . '.json';
 
         if (file_exists($file) && filesize($file) > self::MAX_FILE_SIZE_BYTES) {
-            throw new \RuntimeException('Analytics log file size limit exceeded for ' . $date);
+            return;
         }
 
         $fp = fopen($file, 'c+');
@@ -288,7 +323,9 @@ class FileAnalytics implements AnalyticsInterface
             $size = filesize($file);
             $content = $size > 0 ? fread($fp, (int) min($size, self::MAX_READ_BYTES)) : '';
             $logs = json_decode($content, true) ?: [];
-            $logs[] = $data;
+            foreach ($events as $data) {
+                $logs[] = $data;
+            }
 
             if (count($logs) > self::MAX_ENTRIES) {
                 $logs = array_slice($logs, -self::KEEP_ENTRIES_AFTER_ROTATION);
